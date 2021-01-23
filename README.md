@@ -17,6 +17,16 @@
 
 Note: Larch is currently being actively developed. Until it reaches v1.0.0 breaking changes may occur in minor versions.
 
+Larch is a new service and all-around tool for managing, archiving, viewing and sharing bookmarks. It builds on one novel idea - Larch will one day become obsolete, but its archives must not.
+
+That is, Larch is designed from the ground up knowing that it may one day cease to work. Whether this is due to radically new CPU architectures, deprecation of the binary format or any other reason, Larch will ensure that you may keep your archives for a long time to come.
+
+Until then, however, Larch comes with some great features centered around a series of tools and an API.
+
+As a tool, Larch enables you to easily create archives of links and converting them between several formats such as WARC and WebArchive right from your CLI.
+
+As a service and API, Larch enables you to create and manage archives, bookmarks and share them via a lightweight server. It is built with complete control and extensibility in mind, centered around its API and a pluggable architecture.
+
 ## Quickstart
 <a name="quickstart"></a>
 
