@@ -11,4 +11,16 @@ var Commands = []*cli.Command{
 		Usage:  "Show the application's version",
 		Action: versionCommand,
 	},
+	{
+		Name:   "webarchive",
+		Usage:  "Work with WebArchives",
+		Action: webArchiveCommand,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "path",
+				Usage: "Path to read",
+				Value: "",
+			},
+		},
+	},
 }

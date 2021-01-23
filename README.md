@@ -38,6 +38,8 @@ Upcoming.
 * Link monitoring
 * Archiving of links
 * Fully controllable via APIs
+* Supports [WARC](https://github.com/internetarchive/heritrix3/wiki/WARC%20%28Web%20ARChive%29) archives (ISO 28500:2017)
+* Supports [WebArchive](https://en.wikipedia.org/wiki/Webarchive)
 
 <a id="installation"></a>
 ## Installation
