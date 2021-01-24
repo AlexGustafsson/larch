@@ -1,0 +1,11 @@
+WARC/1.0
+WARC-Type: resource
+WARC-Target-URI: file://var/www/htdoc/images/logoc.jpg
+WARC-Date: 2006-09-30T16:40:32Z
+WARC-Record-ID: <urn:uuid:23200706-de3e-3c61-a131-g65d7fd80cc1>
+Content-Type: image/jpeg
+WARC-Payload-Digest: sha1:DBXHDRBXLF4OMUZ5DN4JJ2KFUAOB6VK8
+WARC-Block-Digest: sha1:DBXHDRBXLF4OMUZ5DN4JJ2KFUAOB6VK8
+Content-Length: 1662
+
+[image/jpeg binary data here]

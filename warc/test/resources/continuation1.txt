@@ -1,0 +1,22 @@
+WARC/1.0
+WARC-Type: response
+WARC-Target-URI: http://www.archive.org/images/logoc.jpg
+WARC-Date: 2006-09-19T17:20:24Z
+WARC-Block-Digest: sha1:2ASS7ZUZY6ND6CCHXETFVJDENAWF7KQ2
+WARC-Payload-Digest: sha1:CCHXETFVJD2MUZY6ND6SS7ZENMWF7KQ2
+WARC-IP-Address: 207.241.233.58
+WARC-Record-ID: <urn:uuid:39509228-ae2f-11b2-763a-aa4c6ec90bb0>
+WARC-Segment-Number: 1
+Content-Type: application/http;msgtype=response
+Content-Length: 1600
+HTTP/1.1 200 OK
+Date: Tue, 19 Sep 2006 17:18:40 GMT
+Server: Apache/2.0.54 (Ubuntu)
+Last-Modified: Mon, 16 Jun 2003 22:28:51 GMT
+ETag: "3e45-67e-2ed02ec0"
+Accept-Ranges: bytes
+Content-Length: 1662
+Connection: close
+Content-Type: image/jpeg
+
+[first 1360 bytes of image/jpeg binary data here]
