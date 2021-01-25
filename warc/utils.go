@@ -23,11 +23,13 @@ func unwrapStruct(v interface{}) (reflect.Type, reflect.Value, error) {
 		isPointer = true
 	}
 
+	// Enforce a struct type
 	if structType.Kind() != reflect.Struct {
 		return nil, reflect.ValueOf(nil), fmt.Errorf("Expected kind struct got %v", structType.Kind())
 	}
 
-	// Alway's ensure we're dealing with a pointer to the value
+	// Alway's ensure we're dealing with a pointer to the value, to make the fields'
+	// values addressable
 	var structValue reflect.Value
 	if isPointer {
 		structValue = reflect.ValueOf(v).Elem()
@@ -38,6 +40,7 @@ func unwrapStruct(v interface{}) (reflect.Type, reflect.Value, error) {
 	return structType, structValue, nil
 }
 
+// parseOptions parses a field tag, returning the specified name and whether or not the field's value should be omitted if empty.
 func parseOptions(field reflect.StructField) (string, bool) {
 	// Parse the field options
 	options := strings.Split(field.Tag.Get(tagName), ",")
@@ -67,6 +70,7 @@ func Marshal(v interface{}) ([]byte, error) {
 	for i := 0; i < structType.NumField(); i++ {
 		field := structType.Field(i)
 		fieldValue := structValue.Field(i)
+
 		// Skip non-public values as they cannot be accessed
 		if !fieldValue.CanInterface() {
 			continue
@@ -78,7 +82,7 @@ func Marshal(v interface{}) ([]byte, error) {
 
 		include := !omitEmpty || (omitEmpty && !isEmpty(value))
 		if include {
-			fmt.Fprintf(writer, "%s: %s\r\n", wantedName, convertValue(value))
+			fmt.Fprintf(writer, "%s: %s\r\n", wantedName, serializeValue(value))
 		}
 	}
 
@@ -99,8 +103,9 @@ func Unmarshal(data []byte, v interface{}) error {
 	for i := 0; i < structType.NumField(); i++ {
 		field := structType.Field(i)
 		fieldValue := structValue.Field(i)
+
 		// Skip non-public values as they cannot be accessed
-		if !fieldValue.CanInterface() {
+		if !fieldValue.CanSet() || !fieldValue.CanInterface() {
 			continue
 		}
 
@@ -131,11 +136,6 @@ func Unmarshal(data []byte, v interface{}) error {
 			return fmt.Errorf("Got invalid field '%v'", actualName)
 		}
 
-		// Skip non-accessible fields
-		if !field.CanSet() || !field.CanInterface() {
-			continue
-		}
-
 		err := setValue(field, value)
 		if err != nil {
 			return err
@@ -145,12 +145,13 @@ func Unmarshal(data []byte, v interface{}) error {
 	return nil
 }
 
-func convertValue(value interface{}) interface{} {
+// serializeValue converts a supported value to its string representation.
+func serializeValue(value interface{}) interface{} {
 	switch castValue := value.(type) {
 	case time.Time:
 		return castValue.Format("2006-01-02T15:04:05-0700")
 	case time.Duration:
-		return convertValue(castValue.Milliseconds())
+		return serializeValue(castValue.Milliseconds())
 	case int64:
 		return strconv.FormatInt(castValue, 10)
 	case uint64:
@@ -160,6 +161,7 @@ func convertValue(value interface{}) interface{} {
 	}
 }
 
+// isEmpty returns whether or not a supported value is empty.
 func isEmpty(value interface{}) bool {
 	switch castValue := value.(type) {
 	case string:
@@ -171,6 +173,7 @@ func isEmpty(value interface{}) bool {
 	}
 }
 
+// setValue sets a value of a field given its serialized string representation.
 func setValue(field reflect.Value, value string) error {
 	switch field.Interface().(type) {
 	case string:
