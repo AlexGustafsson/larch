@@ -42,7 +42,7 @@ lint: $(source) $(test_source) Makefile
 
 # Test Go code
 test: $(source) $(test_source) Makefile
-	go test -v github.com/AlexGustafsson/larch/warc
+	go test -v ./...
 
 # Build for the native platform. For cross-platform builds, see "package" below
 build/larch: $(source) Makefile
