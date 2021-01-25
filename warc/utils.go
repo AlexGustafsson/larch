@@ -1,6 +1,7 @@
 package warc
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -12,11 +13,7 @@ import (
 
 const tagName = "warc"
 
-// Marshal converts an interface to a `key: value` format.
-func Marshal(v interface{}) ([]byte, error) {
-	buffer := new(bytes.Buffer)
-	writer := io.Writer(buffer)
-
+func unwrapStruct(v interface{}) (reflect.Type, reflect.Value, error) {
 	structType := reflect.TypeOf(v)
 
 	// Unwrap the value if it's a pointer
@@ -27,12 +24,44 @@ func Marshal(v interface{}) ([]byte, error) {
 	}
 
 	if structType.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("Expected kind struct got %v", structType.Kind())
+		return nil, reflect.ValueOf(nil), fmt.Errorf("Expected kind struct got %v", structType.Kind())
 	}
 
-	structValue := reflect.ValueOf(v)
+	// Alway's ensure we're dealing with a pointer to the value
+	var structValue reflect.Value
 	if isPointer {
-		structValue = reflect.Indirect(structValue)
+		structValue = reflect.ValueOf(v).Elem()
+	} else {
+		structValue = reflect.New(reflect.Indirect(reflect.ValueOf(v)).Type()).Elem()
+	}
+
+	return structType, structValue, nil
+}
+
+func parseOptions(field reflect.StructField) (string, bool) {
+	// Parse the field options
+	options := strings.Split(field.Tag.Get(tagName), ",")
+	omitEmpty := false
+	wantedName := field.Name
+	for _, option := range options {
+		if option == "omitempty" {
+			omitEmpty = true
+		} else if option != "" {
+			wantedName = option
+		}
+	}
+
+	return wantedName, omitEmpty
+}
+
+// Marshal converts an interface to a `key: value` format.
+func Marshal(v interface{}) ([]byte, error) {
+	buffer := new(bytes.Buffer)
+	writer := io.Writer(buffer)
+
+	structType, structValue, err := unwrapStruct(v)
+	if err != nil {
+		return nil, err
 	}
 
 	for i := 0; i < structType.NumField(); i++ {
@@ -43,23 +72,13 @@ func Marshal(v interface{}) ([]byte, error) {
 			continue
 		}
 
-		// Parse the field options
-		options := strings.Split(field.Tag.Get(tagName), ",")
-		omitEmpty := false
-		tag := field.Name
-		for _, option := range options {
-			if option == "omitempty" {
-				omitEmpty = true
-			} else if option != "" {
-				tag = option
-			}
-		}
+		wantedName, omitEmpty := parseOptions(field)
 
 		value := fieldValue.Interface()
 
 		include := !omitEmpty || (omitEmpty && !isEmpty(value))
 		if include {
-			fmt.Fprintf(writer, "%s: %s\r\n", tag, convertValue(value))
+			fmt.Fprintf(writer, "%s: %s\r\n", wantedName, convertValue(value))
 		}
 	}
 
@@ -68,6 +87,61 @@ func Marshal(v interface{}) ([]byte, error) {
 
 // Unmarshal sets values in a structure from a `key: value` format.
 func Unmarshal(data []byte, v interface{}) error {
+	// Actual name of fields by their "wanted name"
+	fieldNames := make(map[string]string)
+
+	structType, structValue, err := unwrapStruct(v)
+	if err != nil {
+		return err
+	}
+
+	// Populate the declared field names
+	for i := 0; i < structType.NumField(); i++ {
+		field := structType.Field(i)
+		fieldValue := structValue.Field(i)
+		// Skip non-public values as they cannot be accessed
+		if !fieldValue.CanInterface() {
+			continue
+		}
+
+		wantedName, _ := parseOptions(field)
+		fieldNames[wantedName] = field.Name
+	}
+
+	reader := bytes.NewReader(data)
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		values := strings.Split(scanner.Text(), ": ")
+		if len(values) != 2 {
+			return fmt.Errorf("Got bad line. Expected 'key: value' got '%v'", values)
+		}
+
+		name := values[0]
+		value := values[1]
+
+		actualName := fieldNames[name]
+		if actualName == "" {
+			continue
+		}
+
+		field := structValue.FieldByName(actualName)
+		if !field.IsValid() {
+			return fmt.Errorf("Got invalid field '%v'", actualName)
+		}
+
+		// Skip non-accessible fields
+		if !field.CanSet() || !field.CanInterface() {
+			continue
+		}
+
+		err := setValue(field, value)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -95,4 +169,36 @@ func isEmpty(value interface{}) bool {
 	default:
 		return castValue == nil
 	}
+}
+
+func setValue(field reflect.Value, value string) error {
+	switch field.Interface().(type) {
+	case string:
+		field.SetString(value)
+	case int:
+		parsedValue, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return err
+		}
+
+		field.SetInt(parsedValue)
+	case time.Time:
+		parsedValue, err := time.Parse("2006-01-02T15:04:05-0700", value)
+		if err != nil {
+			return nil
+		}
+
+		field.Set(reflect.ValueOf(parsedValue))
+	case time.Duration:
+		parsedValue, err := time.ParseDuration(value + "ms")
+		if err != nil {
+			return nil
+		}
+
+		field.Set(reflect.ValueOf(parsedValue))
+	default:
+		return fmt.Errorf("Unsupported type: %v", field.Type())
+	}
+
+	return nil
 }
