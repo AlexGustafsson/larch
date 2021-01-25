@@ -1,6 +1,7 @@
 package warc
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"time"
@@ -18,28 +19,28 @@ type Payload struct {
 type InfoPayload struct {
 	Payload
 	// Operator contains contact information for the operator who created this WARC resource.
-	Operator string `warc:"operator"`
+	Operator string `warc:"operator,omitempty"`
 	// Software is the software and version used to create this WARC resource.
-	Software string `warc:"software"`
+	Software string `warc:"software,omitempty"`
 	// Robots is the robots policy followed by the harvester creating this WARC resource.
-	Robots string `warc:"robots"`
+	Robots string `warc:"robots,omitempty"`
 	// Hostname is the hostname of the machine that created this WARC resource.
-	Hostname string `warc:"hostname"`
+	Hostname string `warc:"hostname,omitempty"`
 	// The IP address of the machine that created this WARC resource.
-	IP string `warc:"ip"`
+	IP string `warc:"ip,omitempty"`
 	// UserAgent is the HTTP 'user-agent' header usually sent by the harvester along with each request.
-	UserAgent string `warc:"http-header-user-agent"`
+	UserAgent string `warc:"http-header-user-agent,omitempty"`
 	// From is the HTTP 'From' header usually sent by the harvester along with each request.
-	From string `warc:"http-header-from"`
+	From string `warc:"http-header-from,omitempty"`
 }
 
 // MetadataPayload is a payload record that contains content created in order to further describe a harvested resource.
 type MetadataPayload struct {
 	Payload
 	// Via is the referring URI from which the archived URI was discorvered.
-	Via string `warc:"via"`
+	Via string `warc:"via,omitempty"`
 	// HopsFromSeed describes the type of each hop from a starting URI to the current URI.
-	HopsFromSeed string `warc:"hopsFromSeed"`
+	HopsFromSeed string `warc:"hopsFromSeed,omitempty"`
 	// FetchTime is the time that it took to collect the archived URI, starting from the initation of network traffic.
 	FetchTime time.Duration `warc:"fetchTimeMs"`
 }
@@ -89,8 +90,20 @@ func ParseInfoPayload(payload *Payload, header *Header) (*Payload, error) {
 	return payload, nil
 }
 
-// ParseInfoPayload parses a WARC metadata record's payload.
+// ParseMetadataPayload parses a WARC metadata record's payload.
 func ParseMetadataPayload(payload *Payload, header *Header) (*Payload, error) {
 	// TODO: Actually parse payload
 	return payload, nil
+}
+
+// Write writes the payload to a stream.
+func (payload *Payload) Write(writer io.Writer) {
+	writer.Write(payload.Data)
+}
+
+// String converts the payload into a string
+func (payload *Payload) String() string {
+	buffer := new(bytes.Buffer)
+	payload.Write(buffer)
+	return buffer.String()
 }

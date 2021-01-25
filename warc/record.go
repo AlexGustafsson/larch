@@ -34,14 +34,27 @@ func ReadRecord(reader io.ReadSeeker) (*Record, error) {
 }
 
 // Write writes the record to a stream.
-func (record *Record) Write(writer io.Writer) {
-	record.Header.Write(writer)
-	record.Payload.Write(writer)
+func (record *Record) Write(writer io.Writer) error {
+	err := record.Header.Write(writer)
+	if err != nil {
+		return err
+	}
+
+	writer.Write([]byte("\r\n"))
+
+	if record.Payload != nil {
+		record.Payload.Write(writer)
+	}
+
+	return nil
 }
 
 // String converts the record into a string
-func (record *Record) String() string {
+func (record *Record) String() (string, error) {
 	buffer := new(bytes.Buffer)
-	record.Write(buffer)
-	return buffer.String()
+	err := record.Write(buffer)
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }

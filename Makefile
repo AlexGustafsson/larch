@@ -17,9 +17,10 @@ build = GOOS=$(1) GOARCH=$(2) go build $(BUILD_FLAGS) -o build/$(binary)$(3) ./c
 tar = cd build && tar -czf $(1)_$(2).tar.gz $(binary)$(3) && rm $(binary)$(3)
 zip = cd build && zip $(1)_$(2).zip $(binary)$(3) && rm $(binary)$(3)
 
-source := $(shell find . -type f -name '*.go')
+source := $(shell find . -type f -name '*.go' -not -iname '*_test.go')
+test_source := $(shell find . -type f -name '*_test.go')
 
-.PHONY: help build package windows darwin linux format lint clean
+.PHONY: help build package windows darwin linux format lint test clean
 
 # Produce a short description of available make commands
 help:
@@ -32,12 +33,16 @@ build: build/larch
 package: ./build/frontend.zip windows darwin linux
 
 # Format Go code
-format: $(source) Makefile
+format: $(source) $(test_source) Makefile
 	gofmt -l -s -w .
 
 # Lint Go code
-lint: $(source) Makefile
+lint: $(source) $(test_source) Makefile
 	golint .
+
+# Test Go code
+test: $(source) $(test_source) Makefile
+	go test -v github.com/AlexGustafsson/larch/warc
 
 # Build for the native platform. For cross-platform builds, see "package" below
 build/larch: $(source) Makefile
