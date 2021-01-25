@@ -13,7 +13,7 @@
 </p>
 
 # Larch
-### A self-hosted service for managing, archiving, viewing and sharing bookmarks
+### A self-hosted service and toolset for managing, archiving, viewing and sharing bookmarks
 
 Note: Larch is currently being actively developed. Until it reaches v1.0.0 breaking changes may occur in minor versions.
 
@@ -21,9 +21,9 @@ Larch is a new service and all-around tool for managing, archiving, viewing and 
 
 That is, Larch is designed from the ground up knowing that it may one day cease to work. Whether this is due to radically new CPU architectures, deprecation of the binary format or any other reason, Larch will ensure that you may keep your archives for a long time to come.
 
-Until then, however, Larch comes with some great features centered around a series of tools and an API.
+Until then, however, Larch comes with some great features centered around a series of tools and APIs.
 
-As a tool, Larch enables you to easily create archives of links and converting them between several formats such as WARC and WebArchive right from your CLI.
+As a tool, Larch enables you to easily create archives of websites (bookmarks) and convert them between several formats such as WARC (archive.org) and WebArchive (Safari) right from your CLI.
 
 As a service and API, Larch enables you to create and manage archives, bookmarks and share them via a lightweight server. It is built with complete control and extensibility in mind, centered around its API and a pluggable architecture.
 
@@ -43,16 +43,16 @@ Upcoming.
 <a id="features"></a>
 ## Features
 
-* Plugin-driven, extensible architecture
-* Automatic backups
-* Link monitoring
-* Archiving of links
-* Fully controllable via APIs
+* Plugin-driven, extensible architecture (upcoming)
+* Automatic backups (upcoming)
+* Link monitoring (upcoming)
+* Archiving of links (upcoming)
+* Fully controllable via APIs (upcoming)
 * Supports [WARC](https://github.com/internetarchive/heritrix3/wiki/WARC%20%28Web%20ARChive%29) archives (ISO 28500:2017)
 * Supports [WebArchive](https://en.wikipedia.org/wiki/Webarchive)
-* Supports TOR
-* Supports IPFS
-* Supports Encrypted Archives
+* Supports TOR (upcoming)
+* Supports IPFS (upcoming)
+* Supports Encrypted Archives (upcoming)
 
 <a id="installation"></a>
 ## Installation
