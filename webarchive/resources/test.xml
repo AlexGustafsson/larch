@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>WebMainResource</key>
+	<dict>
+		<key>WebResourceData</key>
+		<!--Foo, Bar-->
+		<data>Rm9vLCBCYXI=</data>
+		<key>WebResourceFrameName</key>
+		<string></string>
+		<key>WebResourceMIMEType</key>
+		<string>text/html</string>
+		<key>WebResourceTextEncodingName</key>
+		<string>UTF-8</string>
+		<key>WebResourceURL</key>
+		<string>https://archive.org/web/researcher/ArcFileFormat.php</string>
+	</dict>
+	<key>WebSubresources</key>
+	<array>
+		<dict>
+			<key>WebResourceData</key>
+			<!--Bar, Foo-->
+			<data>QmFyLCBGb28=</data>
+			<key>WebResourceMIMEType</key>
+			<string>application/x-javascript</string>
+			<key>WebResourceResponse</key>
+			<data></data>
+			<key>WebResourceURL</key>
+			<string>https://archive.org/includes/build/npm/jquery-ui.min.js?v1.12.1</string>
+		</dict>
+	</array>
+</dict>
+</plist>

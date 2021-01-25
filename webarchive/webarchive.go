@@ -21,8 +21,8 @@ type WebArchive struct {
 	SubResources []WebResource `plist:"WebSubresources"`
 }
 
-// ParseWebArchive parses a WebArchive stream
-func ParseWebArchive(reader io.ReadSeeker) (*WebArchive, error) {
+// Read parses a WebArchive stream
+func Read(reader io.ReadSeeker) (*WebArchive, error) {
 	decoder := plist.NewDecoder(reader)
 	archive := &WebArchive{}
 	err := decoder.Decode(archive)
