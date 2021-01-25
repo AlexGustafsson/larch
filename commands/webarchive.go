@@ -24,7 +24,7 @@ func webArchiveCommand(context *cli.Context) error {
 		return err
 	}
 
-	archive, err := webarchive.ParseWebArchive(file)
+	archive, err := webarchive.Read(file)
 	if err != nil {
 		return err
 	}
