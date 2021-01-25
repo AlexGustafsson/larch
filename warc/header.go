@@ -47,9 +47,9 @@ type Header struct {
 	// Date (WARC-Date) is the time at which the data capture for the record began. Mandatory.
 	Date time.Time `warc:"WARC-Date"`
 	// ContentLength is the number of octets in the block. If no block is present 0 is used. Mandatory.
-	ContentLength uint64 `warc:"ContentLength"`
+	ContentLength uint64 `warc:"Content-Length"`
 	// ContentType is the RFC2045 MIME type of the information in the record's block. Mandatory for non-empty, non-continuation records.
-	ContentType string `warc:"ContentType,omitempty"`
+	ContentType string `warc:"Content-Type,omitempty"`
 	// ConcurrentTo (WARC-Concurrent-To) is the Record IDs of any records created as part of the same capture as the current record. Must be a valid URI.
 	ConcurrentTo string `warc:"WARC-Concurrent-To,omitempty"`
 	// BlockDigest (WARC-Block-Digest) is a digest of the full block of the record. Format algorithm:digest.

@@ -69,6 +69,12 @@ func ReadPayload(reader *bufio.Reader, header *Header) (*Payload, error) {
 
 	payload.Data = buffer
 
+	// Read 2x CRLF after the payload
+	_, err = reader.Discard(4)
+	if err != nil {
+		return nil, err
+	}
+
 	payload, err = ParsePayload(payload, header)
 	if err != nil {
 		return nil, err

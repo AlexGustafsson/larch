@@ -22,8 +22,8 @@ func TestWriteHeader(t *testing.T) {
 WARC-Type: warcinfo
 WARC-Record-ID: <urn:uuid:d7ae5c10-e6b3-4d27-967d-34780c58ba39>
 WARC-Date: 2006-09-19T19:20:14+0200
-ContentLength: 0
-ContentType: application/warc-fields
+Content-Length: 0
+Content-Type: application/warc-fields
 WARC-Segment-Number: 0
 WARC-Segment-Total-Length: 0`
 	raw = strings.TrimSpace(raw)
@@ -45,8 +45,8 @@ func TestReadHeader(t *testing.T) {
 WARC-Type: warcinfo
 WARC-Record-ID: <urn:uuid:d7ae5c10-e6b3-4d27-967d-34780c58ba39>
 WARC-Date: 2006-09-19T19:20:14+0200
-ContentLength: 0
-ContentType: application/warc-fields
+Content-Length: 0
+Content-Type: application/warc-fields
 WARC-Segment-Number: 0
 WARC-Segment-Total-Length: 0`
 	raw = strings.TrimSpace(raw)

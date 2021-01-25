@@ -12,10 +12,31 @@ type File struct {
 	Records []*Record
 }
 
+// ReadHeaders works like Read, but only reads the headers for an entire WARC file.
+func ReadHeaders(reader *bufio.Reader) (*File, error) {
+	file := &File{
+		Records: make([]*Record, 0),
+	}
+
+	for {
+		record, err := ReadRecordHeader(reader)
+		if err != nil {
+			return nil, err
+		}
+
+		// No record received
+		if record == nil {
+			break
+		}
+
+		file.Records = append(file.Records, record)
+	}
+
+	return file, nil
+}
+
 // Read reads an entire WARC file.
 func Read(reader *bufio.Reader) (*File, error) {
-	// scanner := bufio.NewScanner(reader)
-
 	file := &File{
 		Records: make([]*Record, 0),
 	}

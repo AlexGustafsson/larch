@@ -3,6 +3,7 @@ package warc
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 )
 
@@ -29,6 +30,33 @@ func ReadRecord(reader *bufio.Reader) (*Record, error) {
 	record := &Record{
 		Header:  header,
 		Payload: payload,
+	}
+
+	return record, nil
+}
+
+// ReadRecordHeader works like ReadRecord, but always skips the payload.
+func ReadRecordHeader(reader *bufio.Reader) (*Record, error) {
+	header, err := ReadHeader(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	if header.ContentLength > 0 {
+		// TODO: Add support for uint64 by looping?
+		// Skip the 2x CRLF after the payload (+4)
+		discarded, err := reader.Discard(int(header.ContentLength) + 4)
+		if err != nil {
+			return nil, err
+		}
+		if discarded != int(header.ContentLength)+4 {
+			return nil, fmt.Errorf("Expected to skip %vB, but skipped %vB", header.ContentLength, discarded)
+		}
+	}
+
+	record := &Record{
+		Header:  header,
+		Payload: nil,
 	}
 
 	return record, nil

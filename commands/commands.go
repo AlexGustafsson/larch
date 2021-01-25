@@ -23,4 +23,16 @@ var Commands = []*cli.Command{
 			},
 		},
 	},
+	{
+		Name:   "warc",
+		Usage:  "Work with WARCs",
+		Action: warcCommand,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "path",
+				Usage: "Path to read",
+				Value: "",
+			},
+		},
+	},
 }

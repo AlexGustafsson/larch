@@ -13,8 +13,8 @@ func TestReadRecord(t *testing.T) {
 WARC-Type: warcinfo
 WARC-Record-ID: <urn:uuid:d7ae5c10-e6b3-4d27-967d-34780c58ba39>
 WARC-Date: 2006-09-19T19:20:14+0200
-ContentLength: 11
-ContentType: text/raw
+Content-Length: 11
+Content-Type: text/raw
 WARC-Segment-Number: 0
 WARC-Segment-Total-Length: 0
 
