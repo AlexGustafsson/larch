@@ -110,6 +110,12 @@ Commands:
   help     Shows a list of commands or help for one command
 ```
 
+## Documentation
+
+### WARC
+
+WARC 1.0 is implemented according to the ISO 28500:2017 draft available here: [http://bibnum.bnf.fr/WARC/WARC_ISO_28500_version1_latestdraft.pdf](http://bibnum.bnf.fr/WARC/WARC_ISO_28500_version1_latestdraft.pdf).
+
 ## Contributing
 <a name="contributing"></a>
 
