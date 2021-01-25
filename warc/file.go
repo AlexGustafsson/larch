@@ -21,6 +21,9 @@ func ReadHeaders(reader *bufio.Reader) (*File, error) {
 	for {
 		record, err := ReadRecordHeader(reader)
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return nil, err
 		}
 
@@ -44,6 +47,9 @@ func Read(reader *bufio.Reader) (*File, error) {
 	for {
 		record, err := ReadRecord(reader)
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return nil, err
 		}
 

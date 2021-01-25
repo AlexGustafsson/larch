@@ -87,7 +87,10 @@ func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	// Read the version - WARC/1.0
 	buffer, _, err := reader.ReadLine()
 	if err != nil {
-		return nil, err
+		if err == io.EOF {
+			return nil, err
+		}
+		return nil, fmt.Errorf("Unable to read line for header: %v", err)
 	}
 
 	line := string(buffer)

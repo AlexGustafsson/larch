@@ -60,7 +60,7 @@ func ReadPayload(reader *bufio.Reader, header *Header) (*Payload, error) {
 	buffer := make([]byte, header.ContentLength)
 	bytesRead, err := reader.Read(buffer)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to read payload buffer: %v", err)
 	}
 
 	if bytesRead != int(header.ContentLength) {
@@ -72,7 +72,7 @@ func ReadPayload(reader *bufio.Reader, header *Header) (*Payload, error) {
 	// Read 2x CRLF after the payload
 	_, err = reader.Discard(4)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to discard CRLF after payload: %v", err)
 	}
 
 	payload, err = ParsePayload(payload, header)

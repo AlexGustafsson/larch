@@ -121,7 +121,7 @@ func UnmarshalStream(reader *bufio.Reader, v interface{}) error {
 				// We reached the end of the file, stop parsing
 				break
 			} else {
-				return err
+				return fmt.Errorf("Unable to read line whilst unmarshalling: %v", err)
 			}
 		}
 
@@ -151,7 +151,7 @@ func UnmarshalStream(reader *bufio.Reader, v interface{}) error {
 
 		err = setValue(field, value)
 		if err != nil {
-			return err
+			return fmt.Errorf("Unable to set value for field %v: %v", field, err)
 		}
 	}
 
@@ -201,14 +201,14 @@ func setValue(field reflect.Value, value string) error {
 	case int:
 		parsedValue, err := strconv.ParseInt(value, 10, 32)
 		if err != nil {
-			return err
+			return fmt.Errorf("Unable to parse value '%v' for field %v: %v", value, field, err)
 		}
 
 		field.SetInt(parsedValue)
 	case uint64:
 		parsedValue, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
-			return err
+			return fmt.Errorf("Unable to parse value '%v' for field %v: %v", value, field, err)
 		}
 
 		field.SetUint(parsedValue)
@@ -222,7 +222,7 @@ func setValue(field reflect.Value, value string) error {
 	case time.Duration:
 		parsedValue, err := time.ParseDuration(value + "ms")
 		if err != nil {
-			return nil
+			return fmt.Errorf("Unable to parse value '%v' for field %v: %v", value, field, err)
 		}
 
 		field.Set(reflect.ValueOf(parsedValue))

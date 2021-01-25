@@ -47,7 +47,7 @@ func ReadRecordHeader(reader *bufio.Reader) (*Record, error) {
 		// Skip the 2x CRLF after the payload (+4)
 		discarded, err := reader.Discard(int(header.ContentLength) + 4)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Unable to discard CRLF after header: %v", err)
 		}
 		if discarded != int(header.ContentLength)+4 {
 			return nil, fmt.Errorf("Expected to skip %vB, but skipped %vB", header.ContentLength, discarded)
