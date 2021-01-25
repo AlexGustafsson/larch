@@ -202,7 +202,7 @@ func ReadPayload(reader io.ReadSeeker, header *Header) (*Payload, error) {
 		return nil, fmt.Errorf("Unable to read payload. Expected %v bytes got %v", header.ContentLength, bytesRead)
 	}
 
-	payload, err = parsePayload(payload, header)
+	payload, err = ParsePayload(payload, header)
 	if err != nil {
 		return nil, err
 	}
@@ -210,25 +210,25 @@ func ReadPayload(reader io.ReadSeeker, header *Header) (*Payload, error) {
 	return payload, nil
 }
 
-// parsePayload parses a single payload if it's of a supported type. Leaves it unchanged otherwise.
-func parsePayload(payload *Payload, header *Header) (*Payload, error) {
+// ParsePayload parses a single payload if it's of a supported type. Leaves it unchanged otherwise.
+func ParsePayload(payload *Payload, header *Header) (*Payload, error) {
 	if header.Type == TypeInfo {
-		return parseInfoPayload(payload, header)
+		return ParseInfoPayload(payload, header)
 	} else if header.Type == TypeMetadata {
-		return parseMetadataPayload(payload, header)
+		return ParseMetadataPayload(payload, header)
 	}
 
 	return payload, nil
 }
 
-// parseInfoPayload parses a WARC info record's payload.
-func parseInfoPayload(payload *Payload, header *Header) (*Payload, error) {
+// ParseInfoPayload parses a WARC info record's payload.
+func ParseInfoPayload(payload *Payload, header *Header) (*Payload, error) {
 	// TODO: Actually parse payload
 	return payload, nil
 }
 
-// parseInfoPayload parses a WARC metadata record's payload.
-func parseMetadataPayload(payload *Payload, header *Header) (*Payload, error) {
+// ParseInfoPayload parses a WARC metadata record's payload.
+func ParseMetadataPayload(payload *Payload, header *Header) (*Payload, error) {
 	// TODO: Actually parse payload
 	return payload, nil
 }
