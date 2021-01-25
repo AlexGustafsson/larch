@@ -33,6 +33,7 @@ func TestMarshal(t *testing.T) {
 	data, err := Marshal(&v)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	encoded := string(data)
 
@@ -53,6 +54,7 @@ DurationType: 10000`)
 	err := Unmarshal([]byte(raw), &v)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	if diff := deep.Equal(v.TypeWithAnnotation, "foo"); diff != nil {

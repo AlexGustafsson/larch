@@ -1,6 +1,7 @@
 package warc
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 )
@@ -14,7 +15,7 @@ type Record struct {
 }
 
 // ReadRecord reads a record. Returns nil for the record if none was read (EOF).
-func ReadRecord(reader io.ReadSeeker) (*Record, error) {
+func ReadRecord(reader *bufio.Reader) (*Record, error) {
 	header, err := ReadHeader(reader)
 	if err != nil {
 		return nil, err

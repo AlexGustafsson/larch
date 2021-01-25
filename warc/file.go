@@ -1,6 +1,7 @@
 package warc
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 )
@@ -12,7 +13,7 @@ type File struct {
 }
 
 // Read reads an entire WARC file.
-func Read(reader io.ReadSeeker) (*File, error) {
+func Read(reader *bufio.Reader) (*File, error) {
 	// scanner := bufio.NewScanner(reader)
 
 	file := &File{

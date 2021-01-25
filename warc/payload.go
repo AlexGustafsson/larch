@@ -1,6 +1,7 @@
 package warc
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -46,17 +47,18 @@ type MetadataPayload struct {
 }
 
 // ReadPayload reads the payload of a record.
-func ReadPayload(reader io.ReadSeeker, header *Header) (*Payload, error) {
+func ReadPayload(reader *bufio.Reader, header *Header) (*Payload, error) {
 	if header.ContentLength <= 0 {
 		return nil, nil
 	}
 
 	payload := &Payload{
-		Data:   make([]byte, header.ContentLength),
+		Data:   nil,
 		Length: header.ContentLength,
 	}
 
-	bytesRead, err := io.ReadFull(reader, payload.Data)
+	buffer := make([]byte, header.ContentLength)
+	bytesRead, err := reader.Read(buffer)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +66,8 @@ func ReadPayload(reader io.ReadSeeker, header *Header) (*Payload, error) {
 	if bytesRead != int(header.ContentLength) {
 		return nil, fmt.Errorf("Unable to read payload. Expected %v bytes got %v", header.ContentLength, bytesRead)
 	}
+
+	payload.Data = buffer
 
 	payload, err = ParsePayload(payload, header)
 	if err != nil {

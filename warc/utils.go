@@ -89,8 +89,8 @@ func Marshal(v interface{}) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-// Unmarshal sets values in a structure from a `key: value` format.
-func Unmarshal(data []byte, v interface{}) error {
+// UnmarshalStream sets values in a structure from a `key: value` format.
+func UnmarshalStream(reader *bufio.Reader, v interface{}) error {
 	// Actual name of fields by their "wanted name"
 	fieldNames := make(map[string]string)
 
@@ -113,12 +113,25 @@ func Unmarshal(data []byte, v interface{}) error {
 		fieldNames[wantedName] = field.Name
 	}
 
-	reader := bytes.NewReader(data)
-	scanner := bufio.NewScanner(reader)
-	scanner.Split(bufio.ScanLines)
+	for {
+		// TODO: This may cause issues with really long lines, implement "isPrefix" correctly
+		buffer, _, err := reader.ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				// We reached the end of the file, stop parsing
+				break
+			} else {
+				return err
+			}
+		}
 
-	for scanner.Scan() {
-		values := strings.Split(scanner.Text(), ": ")
+		// If the line is empty, stop reading
+		line := string(buffer)
+		if line == "" {
+			break
+		}
+
+		values := strings.Split(line, ": ")
 		if len(values) != 2 {
 			return fmt.Errorf("Got bad line. Expected 'key: value' got '%v'", values)
 		}
@@ -136,13 +149,20 @@ func Unmarshal(data []byte, v interface{}) error {
 			return fmt.Errorf("Got invalid field '%v'", actualName)
 		}
 
-		err := setValue(field, value)
+		err = setValue(field, value)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// Unmarshal sets values in a structure from a `key: value` format.
+func Unmarshal(data []byte, v interface{}) error {
+	reader := bytes.NewReader(data)
+	bufferedReader := bufio.NewReader(reader)
+	return UnmarshalStream(bufferedReader, v)
 }
 
 // serializeValue converts a supported value to its string representation.
@@ -185,6 +205,13 @@ func setValue(field reflect.Value, value string) error {
 		}
 
 		field.SetInt(parsedValue)
+	case uint64:
+		parsedValue, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		field.SetUint(parsedValue)
 	case time.Time:
 		parsedValue, err := time.Parse("2006-01-02T15:04:05-0700", value)
 		if err != nil {
@@ -199,6 +226,7 @@ func setValue(field reflect.Value, value string) error {
 		}
 
 		field.Set(reflect.ValueOf(parsedValue))
+
 	default:
 		return fmt.Errorf("Unsupported type: %v", field.Type())
 	}

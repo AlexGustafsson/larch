@@ -1,7 +1,9 @@
 package warc
 
 import (
+	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"time"
 )
@@ -44,7 +46,7 @@ type Header struct {
 	RecordID string `warc:"WARC-Record-ID"`
 	// Date (WARC-Date) is the time at which the data capture for the record began. Mandatory.
 	Date time.Time `warc:"WARC-Date"`
-	// ContentLength is the number of octents in the block. If no block is present 0 is used. Mandatory.
+	// ContentLength is the number of octets in the block. If no block is present 0 is used. Mandatory.
 	ContentLength uint64 `warc:"ContentLength"`
 	// ContentType is the RFC2045 MIME type of the information in the record's block. Mandatory for non-empty, non-continuation records.
 	ContentType string `warc:"ContentType,omitempty"`
@@ -79,8 +81,25 @@ type Header struct {
 }
 
 // ReadHeader reads the header of a record.
-func ReadHeader(reader io.ReadSeeker) (*Header, error) {
+func ReadHeader(reader *bufio.Reader) (*Header, error) {
 	header := &Header{}
+
+	// Read the version - WARC/1.0
+	buffer, _, err := reader.ReadLine()
+	if err != nil {
+		return nil, err
+	}
+
+	line := string(buffer)
+	if line != "WARC/1.0" {
+		return nil, fmt.Errorf("Expected WARC version header 'WARC/1.0' got '%v'", line)
+	}
+
+	err = UnmarshalStream(reader, header)
+	if err != nil {
+		return nil, err
+	}
+
 	return header, nil
 }
 
@@ -91,6 +110,7 @@ func (header *Header) Write(writer io.Writer) error {
 		return err
 	}
 
+	writer.Write([]byte("WARC/1.0\r\n"))
 	writer.Write(data)
 
 	return nil
