@@ -75,6 +75,8 @@ func (record *Record) Write(writer io.Writer) error {
 		record.Payload.Write(writer)
 	}
 
+	writer.Write([]byte("\r\n\r\n"))
+
 	return nil
 }
 
