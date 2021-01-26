@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const tagName = "warc"
@@ -232,4 +234,13 @@ func setValue(field reflect.Value, value string) error {
 	}
 
 	return nil
+}
+
+// CreateID creates a valid WARC Record ID using a UUID URN.
+func CreateID() (string, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("Unable to create an ID: %v", err)
+	}
+	return "<" + id.URN() + ">", nil
 }
