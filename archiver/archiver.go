@@ -13,6 +13,7 @@ type Archiver struct {
 	File            *warc.File
 	ResolverAddress net.IP
 	ResolverPort    uint16
+	UserAgent       string
 }
 
 // NewArchiver creates a new archiver following best practices.
@@ -22,6 +23,7 @@ func NewArchiver() *Archiver {
 		File:            &warc.File{},
 		ResolverAddress: net.ParseIP("192.168.1.1"),
 		ResolverPort:    uint16(53),
+		UserAgent:       "Larch (github.com/AlexGustafsson/larc)",
 	}
 
 	return archiver
@@ -30,6 +32,11 @@ func NewArchiver() *Archiver {
 // Archive archives a URL as a WARC archive.
 func (archiver *Archiver) Archive(url *url.URL) error {
 	err := archiver.CreateLookupEntry(url)
+	if err != nil {
+		return err
+	}
+
+	err = archiver.CreateHTTPEntry(url)
 	if err != nil {
 		return err
 	}

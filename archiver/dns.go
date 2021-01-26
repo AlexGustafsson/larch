@@ -48,7 +48,7 @@ func (archiver *Archiver) CreateLookupEntry(url *url.URL) error {
 
 	record := &warc.Record{
 		Header: &warc.Header{
-			Type:          "response",
+			Type:          warc.TypeResponse,
 			TargetURI:     "dns:" + url.Host,
 			Date:          time.Now(),
 			RecordID:      id,
