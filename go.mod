@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/go-test/deep v1.0.7
 	github.com/google/uuid v1.2.0
+	github.com/hashicorp/go-plugin v1.4.0
 	github.com/miekg/dns v1.1.35
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.3.0 // indirect

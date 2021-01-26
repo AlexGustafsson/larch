@@ -48,6 +48,12 @@ test: $(source) $(test_source) Makefile
 build/larch: $(source) Makefile
 	go build $(BUILD_FLAGS) -o $@ cmd/larch/larch.go
 
+# Build plugins
+plugins: build/plugins/webarchive
+
+build/plugins/webarchive:
+	go build -o $@ plugins/webarchive.go
+
 # Build for Linux
 linux: build/linux_arm.tar.gz build/linux_arm64.tar.gz build/linux_386.tar.gz build/linux_amd64.tar.gz
 build/linux_386.tar.gz: $(sources)
