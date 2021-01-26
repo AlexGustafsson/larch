@@ -12,6 +12,10 @@ import (
 
 // CreateLookupEntry looks up a hostname's A record and creates the record.
 func (archiver *Archiver) CreateLookupEntry(url *url.URL) error {
+	if url.Host == "" {
+		return fmt.Errorf("Invalid URL, likely missing scheme")
+	}
+
 	start := time.Now()
 	client := dns.Client{}
 	message := dns.Msg{}
@@ -21,11 +25,6 @@ func (archiver *Archiver) CreateLookupEntry(url *url.URL) error {
 		return err
 	}
 	elapsed := time.Since(start)
-
-	// There was no response
-	if len(response.Answer) == 0 {
-		return nil
-	}
 
 	buffer := new(bytes.Buffer)
 	for _, answer := range response.Answer {

@@ -20,8 +20,15 @@ func archiveCommand(context *cli.Context) error {
 		return fmt.Errorf("Got bad URL: %v", err)
 	}
 
+	if parsedURL.Host == "" {
+		return fmt.Errorf("Got bad URL: %s", parsedURL)
+	}
+
 	archiver := archiver.NewArchiver()
-	archiver.Archive(parsedURL)
+	err = archiver.Archive(parsedURL)
+	if err != nil {
+		return err
+	}
 
 	archiver.File.Write(os.Stdout)
 
