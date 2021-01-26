@@ -35,4 +35,16 @@ var Commands = []*cli.Command{
 			},
 		},
 	},
+	{
+		Name:   "archive",
+		Usage:  "Archive sites",
+		Action: archiveCommand,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "url",
+				Usage: "URL of the resource",
+				Value: "",
+			},
+		},
+	},
 }
