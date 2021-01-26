@@ -1,119 +1,69 @@
 package archiver
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/url"
-	"time"
 
 	"github.com/AlexGustafsson/larch/warc"
-	"github.com/gocolly/colly"
+	"github.com/miekg/dns"
 )
+
+// DefaultDNSProvider ...
+const DefaultDNSProvider string = "192.168.1.1:53"
 
 // Archiver contains options for an archiver.
 type Archiver struct {
-	MaxDepth  uint32
-	File      *warc.File
-	collector *colly.Collector
-}
-
-func serializeRequest(request *colly.Request) ([]byte, error) {
-	buffer := new(bytes.Buffer)
-	writer := bufio.NewWriter(buffer)
-
-	fmt.Fprintf(writer, "%v %v HTTP/1.1\r\n", request.Method, request.URL.Path)
-
-	request.Headers.Write(writer)
-	writer.WriteString("\r\n")
-
-	// Consuming the request's body means we'll need to replace it with a new reader
-	if request.Body != nil {
-		body, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			return nil, err
-		}
-		writer.Write(body)
-		request.Body = bytes.NewReader(body)
-	}
-
-	err := writer.Flush()
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
-func serializeResponse(response *colly.Response) []byte {
-	buffer := new(bytes.Buffer)
-	writer := bufio.NewWriter(buffer)
-	fmt.Fprintf(writer, "HTTP/1.1 %v\r\n", response.StatusCode)
-	response.Headers.Write(writer)
-	writer.WriteString("\r\n")
-	writer.Write(response.Body)
-	return buffer.Bytes()
+	MaxDepth uint32
+	file     *warc.File
 }
 
 // NewArchiver creates a new archiver following best practices.
 func NewArchiver() *Archiver {
 	archiver := &Archiver{
-		MaxDepth:  1,
-		File:      &warc.File{},
-		collector: colly.NewCollector(),
+		MaxDepth: 1,
+		file:     &warc.File{},
 	}
-
-	archiver.collector.Async = true
-	archiver.collector.MaxDepth = int(archiver.MaxDepth)
-
-	archiver.collector.OnRequest(func(request *colly.Request) {
-		data, err := serializeRequest(request)
-		if err != nil {
-			return
-		}
-
-		record := &warc.Record{
-			Header: &warc.Header{
-				Type:          "request",
-				Date:          time.Now(),
-				ContentType:   "application/http;msgtype=request",
-				ContentLength: uint64(len(data)),
-			},
-			Payload: &warc.Payload{
-				Data:   data,
-				Length: uint64(len(data)),
-			},
-		}
-
-		archiver.File.Records = append(archiver.File.Records, record)
-	})
-
-	archiver.collector.OnResponse(func(response *colly.Response) {
-		data := serializeResponse(response)
-
-		record := &warc.Record{
-			Header: &warc.Header{
-				Type:          "response",
-				Date:          time.Now(),
-				ContentType:   "application/http;msgtype=response",
-				ContentLength: uint64(len(data)),
-			},
-			Payload: &warc.Payload{
-				Data:   data,
-				Length: uint64(len(data)),
-			},
-		}
-
-		archiver.File.Records = append(archiver.File.Records, record)
-	})
 
 	return archiver
 }
 
+// CreateLookupEntry looks up a hostname's A record and creates the record.
+func (archiver *Archiver) CreateLookupEntry(url *url.URL) error {
+	client := dns.Client{}
+	message := dns.Msg{}
+	message.SetQuestion(url.Host+".", dns.TypeA)
+	response, _, err := client.Exchange(&message, DefaultDNSProvider)
+	if err != nil {
+		return err
+	}
+
+	// There was no response
+	if len(response.Answer) == 0 {
+		return nil
+	}
+
+	// WARC/1.0
+	// WARC-Type: response
+	// WARC-Target-URI: dns:rafaela.adsclasificados.com.ar
+	// WARC-Date: 2011-02-25T19:39:41Z
+	// WARC-IP-Address: 207.241.228.148
+	// WARC-Record-ID: <urn:uuid:757646d3-1ca9-4e0f-8775-23d5f1ed00f0>
+	// Content-Type: text/dns
+	// Content-Length: 73
+
+	// 20110225193941
+	// rafaela.adsclasificados.com.ar.	10800	IN	A	190.183.222.21
+
+	for _, answer := range response.Answer {
+		if record, ok := answer.(*dns.A); ok {
+			fmt.Printf("%s. %d IN A %s\n", url.Host, answer.Header().Ttl, record.A.String())
+		}
+	}
+
+	return nil
+}
+
 // Archive archives a URL as a WARC archive.
 func (archiver *Archiver) Archive(url *url.URL) (*warc.File, error) {
-	archiver.collector.Visit(url.String())
-	archiver.collector.Wait()
-	return nil, nil
+	return archiver.file, nil
 }

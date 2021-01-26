@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"net/url"
-	"os"
 
 	"github.com/AlexGustafsson/larch/archiver"
 	"github.com/urfave/cli/v2"
@@ -23,7 +22,10 @@ func archiveCommand(context *cli.Context) error {
 	archiver := archiver.NewArchiver()
 	archiver.Archive(parsedURL)
 
-	archiver.File.Write(os.Stdout)
+	err = archiver.CreateLookupEntry(parsedURL)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
