@@ -38,6 +38,11 @@ func serializeRequest(request *colly.Request) ([]byte, error) {
 		request.Body = bytes.NewReader(body)
 	}
 
+	err := writer.Flush()
+	if err != nil {
+		return nil, err
+	}
+
 	return buffer.Bytes(), nil
 }
 
@@ -63,7 +68,6 @@ func NewArchiver() *Archiver {
 	archiver.collector.MaxDepth = int(archiver.MaxDepth)
 
 	archiver.collector.OnRequest(func(request *colly.Request) {
-		fmt.Println("Visiting", request.URL)
 		data, err := serializeRequest(request)
 		if err != nil {
 			return
@@ -86,7 +90,6 @@ func NewArchiver() *Archiver {
 	})
 
 	archiver.collector.OnResponse(func(response *colly.Response) {
-		fmt.Println("Visited", response.Request.URL)
 		data := serializeResponse(response)
 
 		record := &warc.Record{
