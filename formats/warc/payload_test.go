@@ -9,7 +9,7 @@ import (
 )
 
 func TestWritePayload(t *testing.T) {
-	payload := &Payload{
+	payload := &RawPayload{
 		Data:   []byte("hello, world!"),
 		Length: 13,
 	}
@@ -39,7 +39,7 @@ func TestReadPayload(t *testing.T) {
 		return
 	}
 
-	if diff := deep.Equal(string(payload.Data), raw); diff != nil {
+	if diff := deep.Equal(payload.String(), raw); diff != nil {
 		t.Error(diff)
 	}
 }

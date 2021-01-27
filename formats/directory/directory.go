@@ -46,7 +46,7 @@ func marshalRecord(record *warc.Record, outputDirectory string) error {
 		return nil
 	}
 
-	responseReader := bufio.NewReader(bytes.NewReader(record.Payload.Data))
+	responseReader := bufio.NewReader(bytes.NewReader(record.Payload.Bytes()))
 	response, err := http.ReadResponse(responseReader, nil)
 	if err != nil {
 		return fmt.Errorf("Unable to parse HTTP response: %v", err)

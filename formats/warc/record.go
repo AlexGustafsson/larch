@@ -12,7 +12,7 @@ type Record struct {
 	// Header is a WARC header containing information about the payload. Guaranteed to exist.
 	Header *Header
 	// Payload is the body of the record. May not exist.
-	Payload *Payload
+	Payload IPayload
 }
 
 // ReadRecord reads a record. Returns nil for the record if none was read (EOF).

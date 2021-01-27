@@ -8,17 +8,44 @@ import (
 	"time"
 )
 
-// Payload is any payload of a WARC Record
-type Payload struct {
+// IPayload is any payload of a WARC Record.
+type IPayload interface {
+	// Write writes the payload to a stream.
+	Write(writer io.Writer)
+	// Bytes returns the byte representation of the payload.
+	Bytes() []byte
+	// String converts the payload into a string
+	String() string
+}
+
+// RawPayload is a base IPayload implementation for raw bytes.
+type RawPayload struct {
 	// Data is the raw data of the payload
 	Data []byte
 	// Length is the length of the data in bytes
 	Length uint64
 }
 
+// Write writes the payload to a stream.
+func (payload *RawPayload) Write(writer io.Writer) {
+	writer.Write(payload.Data)
+}
+
+// Bytes returns the byte representation of the payload.
+func (payload *RawPayload) Bytes() []byte {
+	return payload.Data
+}
+
+// String converts the payload into a string
+func (payload *RawPayload) String() string {
+	buffer := new(bytes.Buffer)
+	payload.Write(buffer)
+	return buffer.String()
+}
+
 // InfoPayload is the payload of a "warcinfo" record.
 type InfoPayload struct {
-	Payload
+	RawPayload
 	// Operator contains contact information for the operator who created this WARC resource.
 	Operator string `warc:"operator,omitempty"`
 	// Software is the software and version used to create this WARC resource.
@@ -37,7 +64,7 @@ type InfoPayload struct {
 
 // MetadataPayload is a payload record that contains content created in order to further describe a harvested resource.
 type MetadataPayload struct {
-	Payload
+	RawPayload
 	// Via is the referring URI from which the archived URI was discorvered.
 	Via string `warc:"via,omitempty"`
 	// HopsFromSeed describes the type of each hop from a starting URI to the current URI.
@@ -47,12 +74,12 @@ type MetadataPayload struct {
 }
 
 // ReadPayload reads the payload of a record.
-func ReadPayload(reader *bufio.Reader, header *Header) (*Payload, error) {
+func ReadPayload(reader *bufio.Reader, header *Header) (IPayload, error) {
 	if header.ContentLength <= 0 {
 		return nil, nil
 	}
 
-	payload := &Payload{
+	payload := &RawPayload{
 		Data:   nil,
 		Length: header.ContentLength,
 	}
@@ -75,16 +102,16 @@ func ReadPayload(reader *bufio.Reader, header *Header) (*Payload, error) {
 		return nil, fmt.Errorf("Unable to discard CRLF after payload: %v", err)
 	}
 
-	payload, err = ParsePayload(payload, header)
+	parsedPayload, err := ParsePayload(payload, header)
 	if err != nil {
 		return nil, err
 	}
 
-	return payload, nil
+	return parsedPayload, nil
 }
 
 // ParsePayload parses a single payload if it's of a supported type. Leaves it unchanged otherwise.
-func ParsePayload(payload *Payload, header *Header) (*Payload, error) {
+func ParsePayload(payload IPayload, header *Header) (IPayload, error) {
 	if header.Type == TypeInfo {
 		return ParseInfoPayload(payload, header)
 	} else if header.Type == TypeMetadata {
@@ -95,25 +122,13 @@ func ParsePayload(payload *Payload, header *Header) (*Payload, error) {
 }
 
 // ParseInfoPayload parses a WARC info record's payload.
-func ParseInfoPayload(payload *Payload, header *Header) (*Payload, error) {
+func ParseInfoPayload(payload IPayload, header *Header) (IPayload, error) {
 	// TODO: Actually parse payload
 	return payload, nil
 }
 
 // ParseMetadataPayload parses a WARC metadata record's payload.
-func ParseMetadataPayload(payload *Payload, header *Header) (*Payload, error) {
+func ParseMetadataPayload(payload IPayload, header *Header) (IPayload, error) {
 	// TODO: Actually parse payload
 	return payload, nil
-}
-
-// Write writes the payload to a stream.
-func (payload *Payload) Write(writer io.Writer) {
-	writer.Write(payload.Data)
-}
-
-// String converts the payload into a string
-func (payload *Payload) String() string {
-	buffer := new(bytes.Buffer)
-	payload.Write(buffer)
-	return buffer.String()
 }
