@@ -3,6 +3,8 @@ module github.com/AlexGustafsson/larch
 go 1.15
 
 require (
+	github.com/chromedp/cdproto v0.0.0-20210122124816-7a656c010d57
+	github.com/chromedp/chromedp v0.6.5
 	github.com/go-test/deep v1.0.7
 	github.com/google/uuid v1.2.0
 	github.com/miekg/dns v1.1.35

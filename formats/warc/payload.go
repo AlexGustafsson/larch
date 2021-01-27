@@ -14,8 +14,10 @@ type IPayload interface {
 	Write(writer io.Writer)
 	// Bytes returns the byte representation of the payload.
 	Bytes() []byte
-	// String converts the payload into a string
+	// String converts the payload into a string.
 	String() string
+	// Reader returns a reader for the data.
+	Reader() io.Reader
 }
 
 // RawPayload is a base IPayload implementation for raw bytes.
@@ -36,11 +38,16 @@ func (payload *RawPayload) Bytes() []byte {
 	return payload.Data
 }
 
-// String converts the payload into a string
+// String converts the payload into a string.
 func (payload *RawPayload) String() string {
 	buffer := new(bytes.Buffer)
 	payload.Write(buffer)
 	return buffer.String()
+}
+
+// Reader returns a reader for the data.
+func (payload *RawPayload) Reader() io.Reader {
+	return bytes.NewReader(payload.Data)
 }
 
 // InfoPayload is the payload of a "warcinfo" record.

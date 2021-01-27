@@ -244,3 +244,18 @@ func CreateID() (string, error) {
 	}
 	return "<" + id.URN() + ">", nil
 }
+
+// ParseID parsers aa WARC Record ID and returns a UUID.
+func ParseID(id string) (uuid.UUID, error) {
+	unwrapped := strings.TrimSuffix(strings.TrimPrefix(id, "<"), ">")
+	parsed, err := uuid.Parse(unwrapped)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+
+	if parsed.Variant() == uuid.Invalid {
+		return uuid.UUID{}, fmt.Errorf("Invalid UUID: '%s'", unwrapped)
+	}
+
+	return parsed, nil
+}

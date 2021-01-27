@@ -34,11 +34,11 @@ func NewHTTPRequestRecord(request *http.Request) (*warc.Record, error) {
 	// TODO: Handle WARC-Concurrent-To to signify relationship?
 	record := &warc.Record{
 		Header: &warc.Header{
-			Type:          warc.TypeResponse,
+			Type:          warc.TypeRequest,
 			TargetURI:     request.URL.String(),
 			RecordID:      id,
 			Date:          time.Now(),
-			ContentType:   "application/http;msgtype=response",
+			ContentType:   "application/http;msgtype=request",
 			ContentLength: uint64(len(data)),
 		},
 		Payload: &HTTPRequestPayload{
