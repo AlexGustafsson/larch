@@ -88,7 +88,7 @@ func createHTTPResponseRecord(response *http.Response) (*warc.Record, error) {
 			TargetURI:     response.Request.URL.String(),
 			RecordID:      id,
 			Date:          time.Now(),
-			ContentType:   "application/http;msgtype=request",
+			ContentType:   "application/http;msgtype=response",
 			ContentLength: uint64(len(data)),
 		},
 		Payload: &warc.Payload{
