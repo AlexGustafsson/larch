@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/AlexGustafsson/larch/warc"
+	"github.com/AlexGustafsson/larch/formats/warc"
 	"github.com/miekg/dns"
 )
 

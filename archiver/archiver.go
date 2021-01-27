@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/AlexGustafsson/larch/warc"
+	"github.com/AlexGustafsson/larch/formats/warc"
 )
 
 // Archiver contains options for an archiver.

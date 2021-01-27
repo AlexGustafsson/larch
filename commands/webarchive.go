@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AlexGustafsson/larch/webarchive"
+	"github.com/AlexGustafsson/larch/formats/webarchive"
 	"github.com/urfave/cli/v2"
 )
 

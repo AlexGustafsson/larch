@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/AlexGustafsson/larch/warc"
+	"github.com/AlexGustafsson/larch/formats/warc"
 )
 
 // CreateHTTPEntry performs a HTTP GET request and creates the corresponding records.

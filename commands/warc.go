@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AlexGustafsson/larch/warc"
+	"github.com/AlexGustafsson/larch/formats/warc"
 	"github.com/urfave/cli/v2"
 )
 
