@@ -1,6 +1,7 @@
 package archiver
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 
@@ -50,11 +51,17 @@ func (archiver *Archiver) Archive(url *url.URL) error {
 	archiver.File.Records = append(archiver.File.Records, requestRecord)
 	archiver.File.Records = append(archiver.File.Records, responseRecord)
 
-	renderRecord, err := archiver.RenderSite(url, 100)
+	urls, err := archiver.Scrape(responseRecord.Payload.Reader())
 	if err != nil {
 		return err
 	}
-	archiver.File.Records = append(archiver.File.Records, renderRecord)
+	fmt.Println(urls)
+
+	// renderRecord, err := archiver.RenderSite(url, 100)
+	// if err != nil {
+	// 	return err
+	// }
+	// archiver.File.Records = append(archiver.File.Records, renderRecord)
 
 	return nil
 }
