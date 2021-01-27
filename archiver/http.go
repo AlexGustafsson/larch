@@ -9,13 +9,13 @@ import (
 	"github.com/AlexGustafsson/larch/formats/warc"
 )
 
-// CreateHTTPEntry performs a HTTP GET request and creates the corresponding records.
-func (archiver *Archiver) CreateHTTPEntry(url *url.URL) error {
+// Fetch performs a HTTP GET request and returns the corresponding records.
+func (archiver *Archiver) Fetch(url *url.URL) (*warc.Record, *warc.Record, error) {
 	client := &http.Client{}
 
 	request, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	request.Header.Add("User-Agent", archiver.UserAgent)
@@ -23,24 +23,20 @@ func (archiver *Archiver) CreateHTTPEntry(url *url.URL) error {
 
 	requestRecord, err := createHTTPRequestRecord(request)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-
-	archiver.File.Records = append(archiver.File.Records, requestRecord)
 
 	response, err := client.Do(request)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	responseRecord, err := createHTTPResponseRecord(response)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	archiver.File.Records = append(archiver.File.Records, responseRecord)
-
-	return nil
+	return requestRecord, responseRecord, nil
 }
 
 func createHTTPRequestRecord(request *http.Request) (*warc.Record, error) {

@@ -36,10 +36,19 @@ func (archiver *Archiver) Archive(url *url.URL) error {
 		return err
 	}
 
-	err = archiver.CreateHTTPEntry(url)
+	requestRecord, responseRecord, err := archiver.FetchRobotsTXT(url)
 	if err != nil {
 		return err
 	}
+	archiver.File.Records = append(archiver.File.Records, requestRecord)
+	archiver.File.Records = append(archiver.File.Records, responseRecord)
+
+	requestRecord, responseRecord, err = archiver.Fetch(url)
+	if err != nil {
+		return err
+	}
+	archiver.File.Records = append(archiver.File.Records, requestRecord)
+	archiver.File.Records = append(archiver.File.Records, responseRecord)
 
 	return nil
 }
