@@ -54,7 +54,7 @@ func (archiver *Archiver) CreateLookupEntry(url *url.URL) error {
 			ContentType:   "text/dns",
 			ContentLength: uint64(len(data)),
 		},
-		Payload: &warc.Payload{
+		Payload: &warc.RawPayload{
 			Data:   data,
 			Length: uint64(len(data)),
 		},
