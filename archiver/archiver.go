@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"time"
 
 	"github.com/AlexGustafsson/larch/formats/warc"
 )
@@ -58,11 +59,34 @@ func (archiver *Archiver) Archive(url *url.URL) error {
 	}
 	fmt.Println(urls)
 
-	// renderRecord, err := archiver.RenderSite(url, 100)
-	// if err != nil {
-	// 	return err
-	// }
-	// archiver.File.Records = append(archiver.File.Records, renderRecord)
+	renderRecord, err := archiver.RenderSite(url, 100)
+	if err != nil {
+		return err
+	}
+	archiver.File.Records = append(archiver.File.Records, renderRecord)
+
+	pdf, err := imageToPDF(renderRecord.Payload.Bytes())
+	if err != nil {
+		return err
+	}
+	id, err := warc.CreateID()
+	if err != nil {
+		return err
+	}
+	pdfRecord := &warc.Record{
+		Header: &warc.Header{
+			Type:          warc.TypeResponse,
+			Date:          time.Now(),
+			RecordID:      id,
+			ContentType:   "application/pdf",
+			ContentLength: uint64(len(pdf)),
+		},
+		Payload: &warc.RawPayload{
+			Data:   pdf,
+			Length: uint64(len(pdf)),
+		},
+	}
+	archiver.File.Records = append(archiver.File.Records, pdfRecord)
 
 	return nil
 }

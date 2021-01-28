@@ -67,6 +67,9 @@ func marshalRecord(record *warc.Record, outputDirectory string) error {
 	case "image/png":
 		payload = record.Payload.Reader()
 		name += ".png"
+	case "application/pdf":
+		payload = record.Payload.Reader()
+		name += ".pdf"
 	default:
 		log.Debugf("Defaulting to raw file for content type '%s'", record.Header.ContentType)
 		payload = record.Payload.Reader()

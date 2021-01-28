@@ -9,6 +9,7 @@ require (
 	github.com/go-test/deep v1.0.7
 	github.com/google/uuid v1.2.0
 	github.com/miekg/dns v1.1.35
+	github.com/signintech/gopdf v0.9.13
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/urfave/cli/v2 v2.3.0
