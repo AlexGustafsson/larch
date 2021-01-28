@@ -20,6 +20,14 @@ zip = cd build && zip $(1)_$(2).zip $(binary)$(3) && rm $(binary)$(3)
 source := $(shell find . -type f -name '*.go' -not -iname '*_test.go')
 test_source := $(shell find . -type f -name '*_test.go')
 
+# Force macOS to use clang
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93082
+# https://bugs.llvm.org/show_bug.cgi?id=44406
+# https://openradar.appspot.com/radar?id=4952611266494464
+ifeq ($(shell uname),Darwin)
+	CC=clang
+endif
+
 .PHONY: help build package windows darwin linux format lint test clean
 
 # Produce a short description of available make commands
