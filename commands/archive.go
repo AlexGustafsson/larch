@@ -4,49 +4,44 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 
 	"github.com/AlexGustafsson/larch/archiver"
-	"github.com/AlexGustafsson/larch/formats/directory"
 	"github.com/urfave/cli/v2"
 )
 
 func archiveCommand(context *cli.Context) error {
-	rawURL := context.String("url")
-	if rawURL == "" {
-		return fmt.Errorf("No path given")
+	headersOnly := context.Bool("headers-only")
+	rawURLs := context.StringSlice("url")
+	if len(rawURLs) == 0 {
+		return fmt.Errorf("No URL given")
 	}
 
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		return fmt.Errorf("Got bad URL: %v", err)
-	}
+	parsedURLs := make([]*url.URL, 0)
+	for _, rawURL := range rawURLs {
+		parsedURL, err := url.Parse(rawURL)
+		if err != nil {
+			return fmt.Errorf("Got bad URL: %v", err)
+		}
 
-	if parsedURL.Host == "" {
-		return fmt.Errorf("Got bad URL: %s", parsedURL)
+		if parsedURL.Host == "" {
+			return fmt.Errorf("Got bad URL: %s", parsedURL)
+		}
+
+		parsedURLs = append(parsedURLs, parsedURL)
 	}
 
 	archiver := archiver.NewArchiver()
-	err = archiver.Archive(parsedURL)
+	file, err := archiver.Archive(parsedURLs...)
 	if err != nil {
 		return err
 	}
 
-	// archiver.File.Write(os.Stdout)
-
-	archiver.File.Write(os.Stdout)
-	resolvedPath, err := filepath.Abs("./data/test-output")
-	if err != nil {
-		return err
-	}
-
-	for _, record := range archiver.File.Records {
-		record.Header.Write(os.Stdout)
-	}
-
-	err = directory.Marshal(archiver.File, resolvedPath)
-	if err != nil {
-		return err
+	if headersOnly {
+		for _, record := range file.Records {
+			record.Header.Write(os.Stdout)
+		}
+	} else {
+		file.Write(os.Stdout)
 	}
 
 	return nil

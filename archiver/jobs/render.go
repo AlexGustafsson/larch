@@ -1,12 +1,13 @@
-package archiver
+package jobs
 
 import (
 	"context"
 	"fmt"
 	"math"
 	"net/url"
+	"time"
 
-	"github.com/AlexGustafsson/larch/archiver/records"
+	"github.com/AlexGustafsson/larch/archiver/pipeline"
 	"github.com/AlexGustafsson/larch/formats/warc"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/page"
@@ -14,20 +15,25 @@ import (
 )
 
 // RenderSite creates a render of the site.
-func (archiver *Archiver) RenderSite(url *url.URL, quality int) (*warc.Record, error) {
-	// create context
-	ctx, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
+func CreateRenderJob(url *url.URL, quality int) *pipeline.Job {
+	perform := func(job *pipeline.Job) ([]*warc.Record, error) {
+		// create context
+		ctx, cancel := chromedp.NewContext(context.Background())
+		defer cancel()
 
-	// capture entire browser viewport, returning png with quality=90
+		// capture entire browser viewport, returning png with quality=90
 
-	var buffer []byte
-	err := chromedp.Run(ctx, createScreenshotTasks(url, 90, &buffer))
-	if err != nil {
-		return nil, fmt.Errorf("Unable to render site: %v", err)
+		var buffer []byte
+		err := chromedp.Run(ctx, createScreenshotTasks(url, 90, &buffer))
+		if err != nil {
+			return nil, fmt.Errorf("Unable to render site: %v", err)
+		}
+
+		record, err := newRenderRecord(url, buffer)
+		return []*warc.Record{record}, err
 	}
 
-	return records.NewRenderRecord(url, buffer)
+	return pipeline.NewJob("Render", "Renders the site", perform)
 }
 
 func createScreenshotAction(quality int64, buffer *[]byte) func(ctx context.Context) error {
@@ -70,4 +76,30 @@ func createScreenshotTasks(url *url.URL, quality int64, buffer *[]byte) chromedp
 		chromedp.Navigate(url.String()),
 		chromedp.ActionFunc(createScreenshotAction(quality, buffer)),
 	}
+}
+
+// newRenderRecord creates a record for a rendering of a site.
+func newRenderRecord(url *url.URL, buffer []byte) (*warc.Record, error) {
+	id, err := warc.CreateID()
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Handle WARC-Corresponds-To to signify relationship?
+	record := &warc.Record{
+		Header: &warc.Header{
+			Type:          warc.TypeConversion,
+			TargetURI:     url.String(),
+			RecordID:      id,
+			Date:          time.Now(),
+			ContentType:   "image/png",
+			ContentLength: uint64(len(buffer)),
+		},
+		Payload: &warc.RawPayload{
+			Data:   buffer,
+			Length: uint64(len(buffer)),
+		},
+	}
+
+	return record, nil
 }

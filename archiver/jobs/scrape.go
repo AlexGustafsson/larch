@@ -1,41 +1,41 @@
-package archiver
+package jobs
 
 import (
-	"bufio"
-	"io"
 	"net/http"
 	"strings"
 
+	"github.com/AlexGustafsson/larch/archiver/pipeline"
+	"github.com/AlexGustafsson/larch/formats/warc"
 	"github.com/PuerkitoBio/goquery"
 	log "github.com/sirupsen/logrus"
 )
 
-// Scrape extracts URLs in use by the target.
+// CreateScrapeJob extracts URLs in use by the target.
 // TODO: Parse all paths and create URLs to return instead
-func (archiver *Archiver) Scrape(reader io.Reader) ([]string, error) {
-	urls := make([]string, 0)
+func CreateScrapeJob(payload *HTTPResponsePayload) *pipeline.Job {
+	perform := func(job *pipeline.Job) ([]*warc.Record, error) {
+		urls := make([]string, 0)
 
-	bufioReader := bufio.NewReader(reader)
-	response, err := http.ReadResponse(bufioReader, nil)
-	if err != nil {
-		return nil, err
+		// Only use the actual mime type, may contain "; charset: utf-8" or the like as well
+		contentType := strings.Split(payload.Response.Header.Get("Content-Type"), "; ")[0]
+		var err error
+		switch contentType {
+		case "text/html":
+			err = scrapeHTML(payload.Response, &urls)
+		case "text/css":
+			err = scrapeCSS(payload.Response, &urls)
+		default:
+			log.Debugf("Skipping scraping of unsupported type %s", contentType)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		// return urls, nil
+		return nil, nil
 	}
 
-	// Only use the actual mime type, may contain "; charset: utf-8" or the like as well
-	contentType := strings.Split(response.Header.Get("Content-Type"), "; ")[0]
-	switch contentType {
-	case "text/html":
-		err = scrapeHTML(response, &urls)
-	case "text/css":
-		err = scrapeCSS(response, &urls)
-	default:
-		log.Debugf("Skipping scraping of unsupported type %s", contentType)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return urls, nil
+	return pipeline.NewJob("Scrape", "Extracts URLs from a HTTP response", perform)
 }
 
 func scrapeHTML(response *http.Response, urls *[]string) error {

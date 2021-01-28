@@ -40,10 +40,14 @@ var Commands = []*cli.Command{
 		Usage:  "Archive sites",
 		Action: archiveCommand,
 		Flags: []cli.Flag{
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "url",
-				Usage: "URL of the resource",
-				Value: "",
+				Usage: "URL to a resource to archive",
+			},
+			&cli.BoolFlag{
+				Name:  "headers-only",
+				Usage: "Only print headers for the resulting WARC file",
+				Value: false,
 			},
 		},
 	},

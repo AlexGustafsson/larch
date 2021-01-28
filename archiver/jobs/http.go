@@ -1,10 +1,12 @@
-package records
+package jobs
 
 import (
 	"bytes"
 	"net/http"
+	"net/url"
 	"time"
 
+	"github.com/AlexGustafsson/larch/archiver/pipeline"
 	"github.com/AlexGustafsson/larch/formats/warc"
 )
 
@@ -20,8 +22,42 @@ type HTTPResponsePayload struct {
 	Response *http.Response
 }
 
-// NewHTTPRequestRecord creates a HTTP request record.
-func NewHTTPRequestRecord(request *http.Request) (*warc.Record, error) {
+// CreateHTTPJob performs a HTTP GET request and returns the corresponding records.
+func CreateHTTPJob(url *url.URL, userAgent string) *pipeline.Job {
+	perform := func(job *pipeline.Job) ([]*warc.Record, error) {
+		client := &http.Client{}
+
+		request, err := http.NewRequest("GET", url.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		request.Header.Add("User-Agent", userAgent)
+		request.Header.Add("Accept", "*/*")
+
+		requestRecord, err := newHTTPRequestRecord(request)
+		if err != nil {
+			return nil, err
+		}
+
+		response, err := client.Do(request)
+		if err != nil {
+			return nil, err
+		}
+
+		responseRecord, err := newHTTPResponseRecord(response)
+		if err != nil {
+			return nil, err
+		}
+
+		return []*warc.Record{requestRecord, responseRecord}, nil
+	}
+
+	return pipeline.NewJob("HTTP", "Fetches A HTTP resource", perform)
+}
+
+// newHTTPRequestRecord creates a HTTP request record.
+func newHTTPRequestRecord(request *http.Request) (*warc.Record, error) {
 	id, err := warc.CreateID()
 	if err != nil {
 		return nil, err
@@ -53,8 +89,8 @@ func NewHTTPRequestRecord(request *http.Request) (*warc.Record, error) {
 	return record, nil
 }
 
-// NewHTTPResponseRecord creates a HTTP response record.
-func NewHTTPResponseRecord(response *http.Response) (*warc.Record, error) {
+// newHTTPResponseRecord creates a HTTP response record.
+func newHTTPResponseRecord(response *http.Response) (*warc.Record, error) {
 	id, err := warc.CreateID()
 	if err != nil {
 		return nil, err

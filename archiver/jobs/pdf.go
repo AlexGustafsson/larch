@@ -1,4 +1,4 @@
-package archiver
+package jobs
 
 import (
 	"bytes"
