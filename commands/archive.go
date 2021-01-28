@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"net/url"
+	"os"
 
 	"github.com/AlexGustafsson/larch/archiver"
 	"github.com/urfave/cli/v2"
@@ -29,7 +30,7 @@ func archiveCommand(context *cli.Context) error {
 		return err
 	}
 
-	// archiver.File.Write(os.Stdout)
+	archiver.File.Write(os.Stdout)
 
 	// archiver.File.Write(os.Stdout)
 	// resolvedPath, err := filepath.Abs("./data/test-output")

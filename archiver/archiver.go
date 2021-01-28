@@ -32,10 +32,11 @@ func NewArchiver() *Archiver {
 
 // Archive archives a URL as a WARC archive.
 func (archiver *Archiver) Archive(url *url.URL) error {
-	err := archiver.CreateLookupEntry(url)
+	dnsRecord, err := archiver.FetchDNSRecord(url)
 	if err != nil {
 		return err
 	}
+	archiver.File.Records = append(archiver.File.Records, dnsRecord)
 
 	requestRecord, responseRecord, err := archiver.FetchRobotsTXT(url)
 	if err != nil {
