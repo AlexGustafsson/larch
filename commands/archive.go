@@ -11,6 +11,11 @@ import (
 
 func archiveCommand(context *cli.Context) error {
 	headersOnly := context.Bool("headers-only")
+	parallelism := context.Uint("parallelism")
+	if parallelism < 1 {
+		return fmt.Errorf("Expected a parallelism value of at least 1")
+	}
+
 	rawURLs := context.StringSlice("url")
 	if len(rawURLs) == 0 {
 		return fmt.Errorf("No URL given")
@@ -30,7 +35,7 @@ func archiveCommand(context *cli.Context) error {
 		parsedURLs = append(parsedURLs, parsedURL)
 	}
 
-	archiver := archiver.NewArchiver()
+	archiver := archiver.NewArchiver(parallelism)
 	file, err := archiver.Archive(parsedURLs...)
 	if err != nil {
 		return err

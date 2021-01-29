@@ -49,6 +49,11 @@ var Commands = []*cli.Command{
 				Usage: "Only print headers for the resulting WARC file",
 				Value: false,
 			},
+			&cli.UintFlag{
+				Name:  "parallelism",
+				Usage: "The number of concurrent jobs to perform",
+				Value: 5,
+			},
 		},
 	},
 }

@@ -3,7 +3,6 @@ package archiver
 import (
 	"net"
 	"net/url"
-	"sync"
 
 	"github.com/AlexGustafsson/larch/archiver/jobs"
 	"github.com/AlexGustafsson/larch/archiver/pipeline"
@@ -17,19 +16,20 @@ type Archiver struct {
 	Render          bool
 	RenderQuality   int
 	file            *warc.File
-	syncGroup       sync.WaitGroup
+	pool            *pipeline.Pool
 	ResolverAddress net.IP
 	ResolverPort    uint16
 	UserAgent       string
 }
 
 // NewArchiver creates a new archiver following best practices.
-func NewArchiver() *Archiver {
+func NewArchiver(parallelism uint) *Archiver {
 	archiver := &Archiver{
 		MaxDepth:        1,
 		Render:          false,
 		RenderQuality:   100,
 		file:            &warc.File{},
+		pool:            pipeline.NewPool(parallelism),
 		ResolverAddress: net.ParseIP("192.168.1.1"),
 		ResolverPort:    uint16(53),
 		UserAgent:       "Larch (github.com/AlexGustafsson/larc)",
@@ -37,18 +37,6 @@ func NewArchiver() *Archiver {
 
 	return archiver
 }
-
-// file, err := archiver.Archive("https://google.se", "https://google.com")
-// archiver.schedule(1, 2)
-// for workers: go func() {
-// 	job := archiver.consume()
-// 	record, err := job.perform()
-// 	if err
-// 		if job.retry
-// 			job.retries++
-// 		archiver.schedule(job)
-// 	job.complete()
-// }
 
 // Schedule schedules a job for processing.
 func (archiver *Archiver) Schedule(jobs ...*pipeline.Job) {
@@ -59,11 +47,7 @@ func (archiver *Archiver) Schedule(jobs ...*pipeline.Job) {
 		job.JobFailedCallback = archiver.OnJobFailed
 		job.PerformJobCallback = archiver.OnPerformJob
 
-		// TODO: Don't schedule them all - create a worker pool to use instead
-		archiver.syncGroup.Add(1)
-		go func(job *pipeline.Job) {
-			job.Perform()
-		}(job)
+		archiver.pool.Submit(job)
 	}
 }
 
@@ -94,8 +78,6 @@ func (archiver *Archiver) OnJobCompleted(job *pipeline.Job, records ...*warc.Rec
 			// archiver.Schedule(httpJobs...)
 		}
 	}
-
-	archiver.syncGroup.Done()
 }
 
 // OnJobFailed handles a failed job, potentially rescheduling it.
@@ -104,12 +86,12 @@ func (archiver *Archiver) OnJobFailed(job *pipeline.Job, err error) {
 	if job.Tries < job.MaximumTries {
 		archiver.Schedule(job)
 	}
-
-	archiver.syncGroup.Done()
 }
 
 // Archive archives a URL as a WARC archive.
 func (archiver *Archiver) Archive(urls ...*url.URL) (*warc.File, error) {
+	archiver.pool.Start()
+
 	for _, url := range urls {
 		httpJob := jobs.CreateHTTPJob(url, archiver.UserAgent)
 		archiver.Schedule(httpJob)
@@ -138,6 +120,6 @@ func (archiver *Archiver) Archive(urls ...*url.URL) (*warc.File, error) {
 		}
 	}
 
-	archiver.syncGroup.Wait()
+	archiver.pool.Wait()
 	return archiver.file, nil
 }
