@@ -23,7 +23,7 @@ func warcCommand(context *cli.Context) error {
 	}
 
 	reader := bufio.NewReader(file)
-	archive, err := warc.ReadHeaders(reader, compressed)
+	archive, err := warc.Read(reader, compressed)
 	if err != nil {
 		return err
 	}

@@ -73,4 +73,33 @@ var Commands = []*cli.Command{
 			},
 		},
 	},
+	{
+		Name:   "convert",
+		Usage:  "Convert between formats",
+		Action: convertCommand,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "input",
+				Aliases: []string{"i"},
+				Usage:   "Input path",
+				Value:   "",
+			},
+			&cli.StringFlag{
+				Name:  "input-format",
+				Usage: "Input format. One of 'warc', 'warc.gz'",
+				Value: "warc",
+			},
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "Output path",
+				Value:   "",
+			},
+			&cli.StringFlag{
+				Name:  "output-format",
+				Usage: "Output file format. One of 'dir', 'tar', 'tgz'",
+				Value: "",
+			},
+		},
+	},
 }
