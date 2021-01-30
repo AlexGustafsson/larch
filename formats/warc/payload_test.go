@@ -16,7 +16,11 @@ func TestWritePayload(t *testing.T) {
 
 	raw := "hello, world!"
 
-	formatted := payload.String()
+	formatted, err := payload.String()
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	if diff := deep.Equal(formatted, raw); diff != nil {
 		t.Error(diff)
@@ -39,7 +43,13 @@ func TestReadPayload(t *testing.T) {
 		return
 	}
 
-	if diff := deep.Equal(payload.String(), raw); diff != nil {
+	serialized, err := payload.String()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if diff := deep.Equal(serialized, raw); diff != nil {
 		t.Error(diff)
 	}
 }

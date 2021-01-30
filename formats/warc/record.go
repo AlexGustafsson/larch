@@ -72,7 +72,10 @@ func (record *Record) Write(writer io.Writer) error {
 	writer.Write([]byte("\r\n"))
 
 	if record.Payload != nil {
-		record.Payload.Write(writer)
+		err = record.Payload.Write(writer)
+		if err != nil {
+			return err
+		}
 	}
 
 	writer.Write([]byte("\r\n\r\n"))

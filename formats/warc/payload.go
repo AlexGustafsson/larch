@@ -11,11 +11,11 @@ import (
 // IPayload is any payload of a WARC Record.
 type IPayload interface {
 	// Write writes the payload to a stream.
-	Write(writer io.Writer)
+	Write(writer io.Writer) error
 	// Bytes returns the byte representation of the payload.
-	Bytes() []byte
+	Bytes() ([]byte, error)
 	// String converts the payload into a string.
-	String() string
+	String() (string, error)
 	// Reader returns a reader for the data.
 	Reader() io.Reader
 }
@@ -29,20 +29,33 @@ type RawPayload struct {
 }
 
 // Write writes the payload to a stream.
-func (payload *RawPayload) Write(writer io.Writer) {
-	writer.Write(payload.Data)
+func (payload *RawPayload) Write(writer io.Writer) error {
+	bytesWritten, err := writer.Write(payload.Data)
+	if err != nil {
+		return err
+	}
+
+	if uint64(bytesWritten) != payload.Length {
+		return fmt.Errorf("Expected to write %d bytes, wrote %d", payload.Length, bytesWritten)
+	}
+
+	return nil
 }
 
 // Bytes returns the byte representation of the payload.
-func (payload *RawPayload) Bytes() []byte {
-	return payload.Data
+func (payload *RawPayload) Bytes() ([]byte, error) {
+	return payload.Data, nil
 }
 
 // String converts the payload into a string.
-func (payload *RawPayload) String() string {
+func (payload *RawPayload) String() (string, error) {
 	buffer := new(bytes.Buffer)
-	payload.Write(buffer)
-	return buffer.String()
+	err := payload.Write(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	return buffer.String(), nil
 }
 
 // Reader returns a reader for the data.
