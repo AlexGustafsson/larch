@@ -46,7 +46,7 @@ Upcoming.
 * Plugin-driven, extensible architecture (upcoming)
 * Automatic backups (upcoming)
 * Link monitoring (upcoming)
-* Archiving of links (upcoming)
+* Archiving of websites
 * Fully controllable via APIs (upcoming)
 * Supports [WARC](https://github.com/internetarchive/heritrix3/wiki/WARC%20%28Web%20ARChive%29) archives (ISO 28500:2017)
 * Supports [WebArchive](https://en.wikipedia.org/wiki/Webarchive)
