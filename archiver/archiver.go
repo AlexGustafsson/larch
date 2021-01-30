@@ -3,6 +3,7 @@ package archiver
 import (
 	"net"
 	"net/url"
+	"sync"
 
 	"github.com/AlexGustafsson/larch/archiver/jobs"
 	"github.com/AlexGustafsson/larch/archiver/pipeline"
@@ -16,6 +17,7 @@ type Archiver struct {
 	Render          bool
 	RenderQuality   int
 	file            *warc.File
+	fileMutex       sync.Mutex
 	pool            *pipeline.Pool
 	ResolverAddress net.IP
 	ResolverPort    uint16
@@ -61,8 +63,9 @@ func (archiver *Archiver) OnJobCompleted(job *pipeline.Job, records ...*warc.Rec
 	log.Infof("Completed job '%s'", job.Name)
 
 	for _, record := range records {
-		// TODO: lock?
+		archiver.fileMutex.Lock()
 		archiver.file.Records = append(archiver.file.Records, record)
+		archiver.fileMutex.Unlock()
 
 		switch record.Header.ContentType {
 		case "application/http;msgtype=response":
