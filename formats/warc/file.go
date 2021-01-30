@@ -14,7 +14,15 @@ type File struct {
 }
 
 // ReadHeaders works like Read, but only reads the headers for an entire WARC file.
-func ReadHeaders(reader *bufio.Reader) (*File, error) {
+func ReadHeaders(reader *bufio.Reader, compressed bool) (*File, error) {
+	if compressed {
+		gzipReader, err := gzip.NewReader(reader)
+		if err != nil {
+			return nil, err
+		}
+		reader = bufio.NewReader(gzipReader)
+	}
+
 	file := &File{
 		Records: make([]*Record, 0),
 	}
@@ -40,7 +48,15 @@ func ReadHeaders(reader *bufio.Reader) (*File, error) {
 }
 
 // Read reads an entire WARC file.
-func Read(reader *bufio.Reader) (*File, error) {
+func Read(reader *bufio.Reader, compressed bool) (*File, error) {
+	if compressed {
+		gzipReader, err := gzip.NewReader(reader)
+		if err != nil {
+			return nil, err
+		}
+		reader = bufio.NewReader(gzipReader)
+	}
+
 	file := &File{
 		Records: make([]*Record, 0),
 	}

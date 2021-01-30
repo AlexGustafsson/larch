@@ -33,6 +33,12 @@ var Commands = []*cli.Command{
 				Usage: "Path to read",
 				Value: "",
 			},
+			&cli.BoolFlag{
+				Name:    "compressed",
+				Aliases: []string{"c"},
+				Usage:   "Whether or not the WARC file is compressed using gzip.",
+				Value:   false,
+			},
 		},
 	},
 	{

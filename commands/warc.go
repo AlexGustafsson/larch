@@ -10,6 +10,8 @@ import (
 )
 
 func warcCommand(context *cli.Context) error {
+	compressed := context.Bool("compressed")
+
 	path := context.String("path")
 	if path == "" {
 		return fmt.Errorf("No path given")
@@ -21,7 +23,7 @@ func warcCommand(context *cli.Context) error {
 	}
 
 	reader := bufio.NewReader(file)
-	archive, err := warc.ReadHeaders(reader)
+	archive, err := warc.ReadHeaders(reader, compressed)
 	if err != nil {
 		return err
 	}
