@@ -71,6 +71,13 @@ func (file *File) Write(writer io.Writer) {
 	}
 }
 
+// WriteHeaders write only the headers to a stream (with all payloads being empty).
+func (file *File) WriteHeaders(writer io.Writer) {
+	for _, record := range file.Records {
+		record.WriteHeader(writer)
+	}
+}
+
 // String converts the file into a string
 func (file *File) String() string {
 	buffer := new(bytes.Buffer)

@@ -80,6 +80,24 @@ func (record *Record) Write(writer io.Writer) error {
 	return nil
 }
 
+// WriteHeader writes the record's header and an empty payload to a stream.
+func (record *Record) WriteHeader(writer io.Writer) error {
+	// Create a copy of the record header, zeroing the content length
+	// TODO: Investigate less memory-intensive solutions
+	dereferencedHeader := *record.Header
+	headerCopy := dereferencedHeader
+	headerCopy.ContentLength = 0
+
+	err := headerCopy.Write(writer)
+	if err != nil {
+		return err
+	}
+
+	writer.Write([]byte("\r\n\r\n\r\n"))
+
+	return nil
+}
+
 // String converts the record into a string
 func (record *Record) String() (string, error) {
 	buffer := new(bytes.Buffer)

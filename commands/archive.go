@@ -55,9 +55,7 @@ func archiveCommand(context *cli.Context) error {
 	}
 
 	if headersOnly {
-		for _, record := range file.Records {
-			record.Header.Write(outputFile)
-		}
+		file.WriteHeaders(outputFile)
 	} else {
 		file.Write(outputFile)
 	}
