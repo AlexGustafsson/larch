@@ -11,6 +11,7 @@ import (
 
 func archiveCommand(context *cli.Context) error {
 	headersOnly := context.Bool("headers-only")
+	compress := context.Bool("compress")
 
 	parallelism := context.Uint("parallelism")
 	if parallelism < 1 {
@@ -55,9 +56,9 @@ func archiveCommand(context *cli.Context) error {
 	}
 
 	if headersOnly {
-		file.WriteHeaders(outputFile)
+		file.WriteHeaders(outputFile, compress)
 	} else {
-		file.Write(outputFile)
+		file.Write(outputFile, compress)
 	}
 
 	return nil

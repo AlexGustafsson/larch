@@ -59,6 +59,12 @@ var Commands = []*cli.Command{
 				Aliases: []string{"o"},
 				Usage:   "The path to write the output too. If output is not specified, stdout will be used.",
 			},
+			&cli.BoolFlag{
+				Name:    "compress",
+				Aliases: []string{"c"},
+				Usage:   "Whether or not to compress the WARC using gzip.",
+				Value:   false,
+			},
 		},
 	},
 }

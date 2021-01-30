@@ -3,6 +3,7 @@ package warc
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"io"
 )
 
@@ -65,22 +66,37 @@ func Read(reader *bufio.Reader) (*File, error) {
 }
 
 // Write writes the file to a stream.
-func (file *File) Write(writer io.Writer) {
+func (file *File) Write(writer io.Writer, compress bool) {
+
 	for _, record := range file.Records {
-		record.Write(writer)
+		if compress {
+			// Write each record in a different gzip stream to allow for "scrubbing"
+			gzipWriter := gzip.NewWriter(writer)
+			record.Write(gzipWriter)
+			gzipWriter.Close()
+		} else {
+			record.Write(writer)
+		}
 	}
 }
 
 // WriteHeaders write only the headers to a stream (with all payloads being empty).
-func (file *File) WriteHeaders(writer io.Writer) {
+func (file *File) WriteHeaders(writer io.Writer, compress bool) {
 	for _, record := range file.Records {
-		record.WriteHeader(writer)
+		if compress {
+			// Write each record in a different gzip stream to allow for "scrubbing"
+			gzipWriter := gzip.NewWriter(writer)
+			record.WriteHeader(gzipWriter)
+			gzipWriter.Close()
+		} else {
+			record.WriteHeader(writer)
+		}
 	}
 }
 
 // String converts the file into a string
 func (file *File) String() string {
 	buffer := new(bytes.Buffer)
-	file.Write(buffer)
+	file.Write(buffer, false)
 	return buffer.String()
 }
