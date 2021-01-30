@@ -67,7 +67,6 @@ func newHTTPRequestRecord(request *http.Request) (*warc.Record, error) {
 	request.Write(serializedRequest)
 	data := serializedRequest.Bytes()
 
-	// TODO: Handle WARC-Concurrent-To to signify relationship?
 	record := &warc.Record{
 		Header: &warc.Header{
 			Type:          warc.TypeRequest,

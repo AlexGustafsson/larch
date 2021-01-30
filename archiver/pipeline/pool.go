@@ -66,5 +66,3 @@ func (pool *Pool) Wait() {
 	log.Debug("Waiting for all jobs to complete")
 	pool.syncGroup.Wait()
 }
-
-// TODO: Implement quitting

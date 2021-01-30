@@ -85,7 +85,6 @@ func newRenderRecord(url *url.URL, buffer []byte) (*warc.Record, error) {
 		return nil, err
 	}
 
-	// TODO: Handle WARC-Corresponds-To to signify relationship?
 	record := &warc.Record{
 		Header: &warc.Header{
 			Type:          warc.TypeConversion,

@@ -42,7 +42,6 @@ func NewArchiver(parallelism uint) *Archiver {
 
 // Schedule schedules a job for processing.
 func (archiver *Archiver) Schedule(jobs ...*pipeline.Job) {
-	// TODO: lock scheduling array? Do it outside the loop for some optimization?
 	for _, job := range jobs {
 		log.Debugf("Scheduling job '%s' (%s)", job.Name, job.Description)
 		job.JobCompletedCallback = archiver.OnJobCompleted
@@ -99,16 +98,12 @@ func (archiver *Archiver) Archive(urls ...*url.URL) (*warc.File, error) {
 		httpJob := jobs.CreateHTTPJob(url, archiver.UserAgent)
 		archiver.Schedule(httpJob)
 
-		// TODO: Schedule before each new domain
-		// to make it actually usable
 		robotsJob, err := jobs.CreateRobotsJob(url, archiver.UserAgent)
 		if err != nil {
 			return nil, err
 		}
 		archiver.Schedule(robotsJob)
 
-		// TODO: Schedule before each new domain
-		// TODO: Handle concurrent to
 		dnsJob, err := jobs.CreateDNSJob(url, archiver.ResolverAddress, archiver.ResolverPort)
 		if err != nil {
 			return nil, err
@@ -116,7 +111,6 @@ func (archiver *Archiver) Archive(urls ...*url.URL) (*warc.File, error) {
 		archiver.Schedule(dnsJob)
 
 		if archiver.Render {
-			// TODO: Handle concurrent to...
 			// Render the initial page
 			renderJob := jobs.CreateRenderJob(url, archiver.RenderQuality)
 			archiver.Schedule(renderJob)

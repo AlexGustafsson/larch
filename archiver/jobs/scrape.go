@@ -11,7 +11,6 @@ import (
 )
 
 // CreateScrapeJob extracts URLs in use by the target.
-// TODO: Parse all paths and create URLs to return instead
 func CreateScrapeJob(payload *HTTPResponsePayload) *pipeline.Job {
 	perform := func(job *pipeline.Job) ([]*warc.Record, error) {
 		urls := make([]string, 0)
@@ -44,8 +43,6 @@ func scrapeHTML(response *http.Response, urls *[]string) error {
 		return err
 	}
 
-	// TODO: Parallelize
-	// TODO: Extract inline CSS for processing with scrapeCSS
 	document.Find("script").Each(func(i int, selection *goquery.Selection) {
 		src, exists := selection.Attr("src")
 		if exists {
@@ -78,6 +75,5 @@ func scrapeHTML(response *http.Response, urls *[]string) error {
 }
 
 func scrapeCSS(response *http.Response, urls *[]string) error {
-	// TODO
 	return nil
 }
