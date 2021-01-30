@@ -11,6 +11,7 @@ import (
 
 func archiveCommand(context *cli.Context) error {
 	headersOnly := context.Bool("headers-only")
+
 	parallelism := context.Uint("parallelism")
 	if parallelism < 1 {
 		return fmt.Errorf("Expected a parallelism value of at least 1")
@@ -35,6 +36,18 @@ func archiveCommand(context *cli.Context) error {
 		parsedURLs = append(parsedURLs, parsedURL)
 	}
 
+	output := context.String("output")
+	var outputFile *os.File
+	if output != "" {
+		file, err := os.Create(output)
+		if err != nil {
+			return fmt.Errorf("Unable to create output file: %v", err)
+		}
+		outputFile = file
+	} else {
+		outputFile = os.Stdout
+	}
+
 	archiver := archiver.NewArchiver(parallelism)
 	file, err := archiver.Archive(parsedURLs...)
 	if err != nil {
@@ -43,10 +56,10 @@ func archiveCommand(context *cli.Context) error {
 
 	if headersOnly {
 		for _, record := range file.Records {
-			record.Header.Write(os.Stdout)
+			record.Header.Write(outputFile)
 		}
 	} else {
-		file.Write(os.Stdout)
+		file.Write(outputFile)
 	}
 
 	return nil

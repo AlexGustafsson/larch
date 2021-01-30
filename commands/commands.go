@@ -42,7 +42,7 @@ var Commands = []*cli.Command{
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:  "url",
-				Usage: "URL to a resource to archive",
+				Usage: "URL to a resource to archive. May be used more than once.",
 			},
 			&cli.BoolFlag{
 				Name:  "headers-only",
@@ -53,6 +53,11 @@ var Commands = []*cli.Command{
 				Name:  "parallelism",
 				Usage: "The number of concurrent jobs to perform",
 				Value: 5,
+			},
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "The path to write the output too. If output is not specified, stdout will be used.",
 			},
 		},
 	},
