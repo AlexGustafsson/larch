@@ -105,13 +105,9 @@ func ReadPayload(reader *bufio.Reader, header *Header) (IPayload, error) {
 	}
 
 	buffer := make([]byte, header.ContentLength)
-	bytesRead, err := reader.Read(buffer)
+	_, err := io.ReadFull(reader, buffer)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read payload buffer: %v", err)
-	}
-
-	if bytesRead != int(header.ContentLength) {
-		return nil, fmt.Errorf("Unable to read payload. Expected %v bytes got %v", header.ContentLength, bytesRead)
 	}
 
 	payload.Data = buffer
