@@ -116,6 +116,10 @@ Commands:
 
 WARC 1.0 is implemented according to the ISO 28500:2017 draft available here: [http://bibnum.bnf.fr/WARC/WARC_ISO_28500_version1_latestdraft.pdf](http://bibnum.bnf.fr/WARC/WARC_ISO_28500_version1_latestdraft.pdf).
 
+Resources:
+* http://fileformats.archiveteam.org/wiki/WARC
+* https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/
+
 ## Contributing
 <a name="contributing"></a>
 
