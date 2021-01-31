@@ -69,7 +69,8 @@ func (archiver *Archiver) OnJobCompleted(job *pipeline.Job, records ...*warc.Rec
 		switch record.Header.ContentType {
 		case "application/http;msgtype=response":
 			if record.Payload != nil {
-				scrapeJob := jobs.CreateScrapeJob(record.Payload.(*jobs.HTTPResponsePayload))
+				response := record.Payload.(*jobs.HTTPResponsePayload)
+				scrapeJob := jobs.CreateScrapeJob(response)
 				archiver.Schedule(scrapeJob)
 			}
 		}
