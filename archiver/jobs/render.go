@@ -14,7 +14,7 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// RenderSite creates a render of the site.
+// CreateRenderJob creates a render of the site.
 func CreateRenderJob(url *url.URL, quality int) *pipeline.Job {
 	perform := func(job *pipeline.Job) ([]*warc.Record, error) {
 		// create context
