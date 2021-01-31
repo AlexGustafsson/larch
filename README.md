@@ -1,6 +1,6 @@
-<!--<p align="center">
-  <img src=".github/banner.png" alt="Banner">
-</p>-->
+<p align="center">
+  <img src=".github/logo.png" alt="Logo">
+</p>
 <p align="center">
   <a href="https://github.com/AlexGustafsson/larch/blob/master/go.mod">
     <img src="https://shields.io/github/go-mod/go-version/AlexGustafsson/larch" alt="Go Version" />
@@ -139,3 +139,7 @@ make build
 ```
 
 _Note: due to a bug (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93082, https://bugs.llvm.org/show_bug.cgi?id=44406, https://openradar.appspot.com/radar?id=4952611266494464), clang is required when building for macOS. GCC cannot be used. Build the server like so: `CC=clang make server`._
+
+### License
+
+The Larch logo was created by Amanda Svensson and is licensed under [Creative Commons Attribution-NonCommercial-NoDerivs 3.0 Unported (CC BY-NC-ND 3.0)](https://creativecommons.org/licenses/by-nc-nd/3.0/).
