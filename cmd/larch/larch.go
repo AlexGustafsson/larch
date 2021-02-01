@@ -1,13 +1,14 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+	"sort"
+
 	"github.com/AlexGustafsson/larch/commands"
 	"github.com/AlexGustafsson/larch/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"os"
-	"path/filepath"
-	"sort"
 )
 
 var appHelpTemplate = `Usage: {{.Name}} [global options] command [command options] [arguments]
@@ -25,7 +26,7 @@ Commands:
 Run '{{.Name}} help command' for more information on a command.
 `
 
-var commandHelpTemplate = `Usage: larch {{.Name}} [options] [arguments]
+var commandHelpTemplate = `Usage: larch {{.Name}} [options] {{if .ArgsUsage}}{{.ArgsUsage}}{{end}}
 
 {{.Usage}}{{if .Description}}
 
