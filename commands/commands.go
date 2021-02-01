@@ -34,10 +34,9 @@ var Commands = []*cli.Command{
 				Value: "",
 			},
 			&cli.BoolFlag{
-				Name:    "compressed",
-				Aliases: []string{"c"},
-				Usage:   "Whether or not the WARC file is compressed using gzip.",
-				Value:   false,
+				Name:  "compressed",
+				Usage: "Whether or not to treat the input archive as compressed. True by default if extension ends with '.gz'",
+				Value: false,
 			},
 		},
 	},

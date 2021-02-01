@@ -4,17 +4,22 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/AlexGustafsson/larch/formats/warc"
 	"github.com/urfave/cli/v2"
 )
 
 func warcCommand(context *cli.Context) error {
-	compressed := context.Bool("compressed")
-
 	path := context.String("path")
 	if path == "" {
 		return fmt.Errorf("No path given")
+	}
+
+	// Compressed is false by default, but reacts to the suffix of the file path
+	compressed := context.Bool("compressed")
+	if !compressed {
+		compressed = strings.HasSuffix(path, ".gz")
 	}
 
 	file, err := os.Open(path)
