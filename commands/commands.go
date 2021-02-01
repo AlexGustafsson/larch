@@ -124,6 +124,11 @@ var Commands = []*cli.Command{
 				Usage: "Disable the Larch interface",
 				Value: false,
 			},
+			&cli.BoolFlag{
+				Name:  "compressed",
+				Usage: "Whether or not to treat the input archive as compressed. True by default if extension ends with '.gz'",
+				Value: false,
+			},
 		},
 	},
 }

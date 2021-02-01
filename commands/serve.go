@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/AlexGustafsson/larch/formats/warc"
 	"github.com/AlexGustafsson/larch/server"
@@ -20,13 +21,23 @@ func serveCommand(context *cli.Context) error {
 	port := uint16(context.Uint("port"))
 	enableInterface := !context.Bool("no-interface")
 
+	// Compressed is false by default, but reacts to the suffix of the file path
+	compressed := context.Bool("compressed")
+	if !compressed {
+		compressed = strings.HasSuffix(archivePath, ".gz")
+	}
+
 	file, err := os.Open(archivePath)
 	if err != nil {
 		return fmt.Errorf("Unable to open archive: %v", err)
 	}
 
 	reader := bufio.NewReader(file)
-	archive, err := warc.Read(reader, false)
+	archive, err := warc.Read(reader, compressed)
+	if err != nil {
+		return err
+	}
+
 	server := server.NewServer(archive)
 	server.EnableInterface = enableInterface
 
