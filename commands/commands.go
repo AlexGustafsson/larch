@@ -102,4 +102,28 @@ var Commands = []*cli.Command{
 			},
 		},
 	},
+	{
+		Name:      "serve",
+		Usage:     "Serve a WARC archive",
+		Action:    serveCommand,
+		ArgsUsage: "<path to archive>",
+		Flags: []cli.Flag{
+			&cli.UintFlag{
+				Name:    "port",
+				Aliases: []string{"p"},
+				Usage:   "Port to listen on",
+				Value:   8080,
+			},
+			&cli.StringFlag{
+				Name:  "address",
+				Usage: "Address to listen on",
+				Value: "",
+			},
+			&cli.BoolFlag{
+				Name:  "no-interface",
+				Usage: "Disable the Larch interface",
+				Value: false,
+			},
+		},
+	},
 }

@@ -8,6 +8,8 @@ require (
 	github.com/chromedp/chromedp v0.6.5
 	github.com/go-test/deep v1.0.7
 	github.com/google/uuid v1.2.0
+	github.com/gorilla/handlers v1.5.1
+	github.com/gorilla/mux v1.8.0
 	github.com/miekg/dns v1.1.35
 	github.com/signintech/gopdf v0.9.13
 	github.com/sirupsen/logrus v1.7.0
