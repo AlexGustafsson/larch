@@ -53,6 +53,7 @@ Upcoming.
 * Supports TOR (upcoming)
 * Supports IPFS (upcoming)
 * Supports Encrypted Archives (upcoming)
+* Supports Netscape Bookmark Files (Safari, Chrome, Firefox)
 
 <a id="installation"></a>
 ## Installation
