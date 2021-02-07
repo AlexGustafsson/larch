@@ -76,6 +76,8 @@ type Header struct {
 	SegmentOriginID string `warc:"WARC-Segment-Origin-ID,omitempty"`
 	// SegmentTotalLength (WARC-Segment-Total-Length) reports the total length of all segment content blocks when concatenated together.
 	SegmentTotalLength uint64 `warc:"WARC-Segment-Total-Length"`
+	// payloadOffset is the offset to the corresponding payload within the archive file. Only valid if read via a Reader.
+	payloadOffset int64
 }
 
 // Write writes the header to a stream.

@@ -36,12 +36,12 @@ func serveCommand(context *cli.Context) error {
 		return err
 	}
 
-	archive, err := reader.ReadAll()
+	archive, err := reader.ReadAllHeaders()
 	if err != nil {
 		return err
 	}
 
-	server := server.NewServer(archive)
+	server := server.NewServer(reader, archive)
 	server.EnableInterface = enableInterface
 
 	server.Start(address, port)

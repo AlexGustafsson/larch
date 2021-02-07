@@ -8,6 +8,7 @@ import (
 
 	"github.com/AlexGustafsson/larch/formats/warc"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 // ControlPanel is an API for providing operations on a WARC archive.
@@ -97,8 +98,32 @@ func (controlPanel *ControlPanel) getPayload(response http.ResponseWriter, reque
 		return
 	}
 
-	if record.Payload != nil {
-		record.Payload.Write(response)
+	// Read the payload on demand if it's unavailable, but should be available
+	// Note: there's currently no caching implemented. It's by design right
+	// now to keep things simple. In the long run a time-based cache could
+	// be relavant.
+	payload := record.Payload
+	if record.Header.ContentLength > 0 && payload == nil {
+		if controlPanel.Server.reader.Seekable {
+			log.WithFields(log.Fields{"Type": "Web"}).Debugf("Payload for record %s is not loaded, reading", record.Header.RecordID)
+			payload, err = controlPanel.Server.reader.ReadPayload(record.Header)
+			if err != nil {
+				response.WriteHeader(500)
+				fmt.Fprintf(response, "Unable To Read Payload")
+				log.WithFields(log.Fields{"Type": "Web"}).Error(err)
+				return
+			}
+		} else {
+			response.WriteHeader(503)
+			fmt.Fprintf(response, "Payload Not Loaded")
+			return
+		}
+	}
+
+	response.Header().Add("Content-Type", record.Header.ContentType)
+	response.WriteHeader(200)
+	if payload != nil {
+		payload.Write(response)
 	}
 }
 

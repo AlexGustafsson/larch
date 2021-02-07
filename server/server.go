@@ -14,13 +14,15 @@ import (
 
 // Server serves a WARC file locally.
 type Server struct {
+	reader          *warc.Reader
 	Archive         *warc.File
 	EnableInterface bool
 }
 
 // NewServer creates a new server for an archive.
-func NewServer(archive *warc.File) *Server {
+func NewServer(reader *warc.Reader, archive *warc.File) *Server {
 	return &Server{
+		reader:          reader,
 		Archive:         archive,
 		EnableInterface: true,
 	}

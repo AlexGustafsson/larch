@@ -80,6 +80,10 @@ WARC-Segment-Total-Length: 0`
 		t.Error(diff)
 	}
 
+	if diff := deep.Equal(header.payloadOffset, int64(245)); diff != nil {
+		t.Error(diff)
+	}
+
 	encoded, err := header.String()
 	if err != nil {
 		t.Error(err)
