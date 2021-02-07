@@ -1,7 +1,6 @@
 package warc
 
 import (
-	"bufio"
 	"strings"
 	"testing"
 
@@ -35,9 +34,12 @@ func TestReadPayload(t *testing.T) {
 		ContentType:   "resource",
 	}
 
-	reader := strings.NewReader(raw)
-	bufferedReader := bufio.NewReader(reader)
-	payload, err := ReadPayload(bufferedReader, header)
+	reader, err := NewReader(strings.NewReader(raw), false)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	payload, err := reader.ReadPayload(header)
 	if err != nil {
 		t.Error(err)
 		return

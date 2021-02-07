@@ -93,12 +93,8 @@ type MetadataPayload struct {
 	FetchTime time.Duration `warc:"fetchTimeMs"`
 }
 
-// ReadPayload reads the payload of a record.
-func ReadPayload(reader *bufio.Reader, header *Header) (IPayload, error) {
-	if header.ContentLength <= 0 {
-		return nil, nil
-	}
-
+// RawPayloadParser is a payload parser for reading raw payloads.
+func RawPayloadParser(reader *bufio.Reader, header *Header) (IPayload, error) {
 	payload := &RawPayload{
 		Data:   nil,
 		Length: header.ContentLength,
@@ -111,28 +107,6 @@ func ReadPayload(reader *bufio.Reader, header *Header) (IPayload, error) {
 	}
 
 	payload.Data = buffer
-
-	// Read 2x CRLF after the payload
-	_, err = reader.Discard(4)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to discard CRLF after payload: %v", err)
-	}
-
-	parsedPayload, err := ParsePayload(payload, header)
-	if err != nil {
-		return nil, err
-	}
-
-	return parsedPayload, nil
-}
-
-// ParsePayload parses a single payload if it's of a supported type. Leaves it unchanged otherwise.
-func ParsePayload(payload IPayload, header *Header) (IPayload, error) {
-	if header.Type == TypeInfo {
-		return ParseInfoPayload(payload, header)
-	} else if header.Type == TypeMetadata {
-		return ParseMetadataPayload(payload, header)
-	}
 
 	return payload, nil
 }

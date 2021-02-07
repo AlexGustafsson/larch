@@ -1,9 +1,7 @@
 package warc
 
 import (
-	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"time"
 )
@@ -78,32 +76,6 @@ type Header struct {
 	SegmentOriginID string `warc:"WARC-Segment-Origin-ID,omitempty"`
 	// SegmentTotalLength (WARC-Segment-Total-Length) reports the total length of all segment content blocks when concatenated together.
 	SegmentTotalLength uint64 `warc:"WARC-Segment-Total-Length"`
-}
-
-// ReadHeader reads the header of a record.
-func ReadHeader(reader *bufio.Reader) (*Header, error) {
-	header := &Header{}
-
-	// Read the version - WARC/1.0
-	buffer, _, err := reader.ReadLine()
-	if err != nil {
-		if err == io.EOF {
-			return nil, err
-		}
-		return nil, fmt.Errorf("Unable to read line for header: %v", err)
-	}
-
-	line := string(buffer)
-	if line != "WARC/1.0" {
-		return nil, fmt.Errorf("Expected WARC version header 'WARC/1.0' got '%v'", line)
-	}
-
-	err = UnmarshalStream(reader, header)
-	if err != nil {
-		return nil, err
-	}
-
-	return header, nil
 }
 
 // Write writes the header to a stream.

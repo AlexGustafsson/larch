@@ -1,7 +1,6 @@
 package warc
 
 import (
-	"bufio"
 	"bytes"
 	"compress/gzip"
 	"io"
@@ -11,74 +10,6 @@ import (
 type File struct {
 	// Records are all the records contained within the file.
 	Records []*Record
-}
-
-// ReadHeaders works like Read, but only reads the headers for an entire WARC file.
-func ReadHeaders(reader *bufio.Reader, compressed bool) (*File, error) {
-	if compressed {
-		gzipReader, err := gzip.NewReader(reader)
-		if err != nil {
-			return nil, err
-		}
-		reader = bufio.NewReader(gzipReader)
-	}
-
-	file := &File{
-		Records: make([]*Record, 0),
-	}
-
-	for {
-		record, err := ReadRecordHeader(reader)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-
-		// No record received
-		if record == nil {
-			break
-		}
-
-		file.Records = append(file.Records, record)
-	}
-
-	return file, nil
-}
-
-// Read reads an entire WARC file.
-func Read(reader *bufio.Reader, compressed bool) (*File, error) {
-	if compressed {
-		gzipReader, err := gzip.NewReader(reader)
-		if err != nil {
-			return nil, err
-		}
-		reader = bufio.NewReader(gzipReader)
-	}
-
-	file := &File{
-		Records: make([]*Record, 0),
-	}
-
-	for {
-		record, err := ReadRecord(reader)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-
-		// No record received
-		if record == nil {
-			break
-		}
-
-		file.Records = append(file.Records, record)
-	}
-
-	return file, nil
 }
 
 // Write writes the file to a stream.

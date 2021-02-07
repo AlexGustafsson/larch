@@ -1,9 +1,7 @@
 package warc
 
 import (
-	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 )
 
@@ -13,53 +11,6 @@ type Record struct {
 	Header *Header
 	// Payload is the body of the record. May not exist.
 	Payload IPayload
-}
-
-// ReadRecord reads a record. Returns nil for the record if none was read (EOF).
-func ReadRecord(reader *bufio.Reader) (*Record, error) {
-	header, err := ReadHeader(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	payload, err := ReadPayload(reader, header)
-	if err != nil {
-		return nil, err
-	}
-
-	record := &Record{
-		Header:  header,
-		Payload: payload,
-	}
-
-	return record, nil
-}
-
-// ReadRecordHeader works like ReadRecord, but always skips the payload.
-func ReadRecordHeader(reader *bufio.Reader) (*Record, error) {
-	header, err := ReadHeader(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	if header.ContentLength > 0 {
-		// TODO: Add support for uint64 by looping?
-		// Skip the 2x CRLF after the payload (+4)
-		discarded, err := reader.Discard(int(header.ContentLength) + 4)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to discard CRLF after header: %v", err)
-		}
-		if discarded != int(header.ContentLength)+4 {
-			return nil, fmt.Errorf("Expected to skip %vB, but skipped %vB", header.ContentLength, discarded)
-		}
-	}
-
-	record := &Record{
-		Header:  header,
-		Payload: nil,
-	}
-
-	return record, nil
 }
 
 // Write writes the record to a stream.

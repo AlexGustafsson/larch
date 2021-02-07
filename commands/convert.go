@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 
@@ -36,8 +35,12 @@ func convertCommand(context *cli.Context) error {
 		return fmt.Errorf("Unable to open input file: %v", err)
 	}
 
-	reader := bufio.NewReader(file)
-	archive, err := warc.Read(reader, inputFormat == "warc.gz")
+	reader, err := warc.NewReader(file, inputFormat == "warc.gz")
+	if err != nil {
+		return err
+	}
+
+	archive, err := reader.ReadAll()
 	if err != nil {
 		return err
 	}

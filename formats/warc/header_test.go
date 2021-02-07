@@ -1,7 +1,6 @@
 package warc
 
 import (
-	"bufio"
 	"strings"
 	"testing"
 	"time"
@@ -53,9 +52,13 @@ WARC-Segment-Total-Length: 0`
 	raw = strings.ReplaceAll(raw, "\n", "\r\n")
 	raw += "\r\n"
 
-	reader := strings.NewReader(raw)
-	bufferedReader := bufio.NewReader(reader)
-	header, err := ReadHeader(bufferedReader)
+	reader, err := NewReader(strings.NewReader(raw), false)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	header, err := reader.ReadHeader()
 	if err != nil {
 		t.Error(err)
 		return

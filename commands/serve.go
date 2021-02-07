@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -32,8 +31,12 @@ func serveCommand(context *cli.Context) error {
 		return fmt.Errorf("Unable to open archive: %v", err)
 	}
 
-	reader := bufio.NewReader(file)
-	archive, err := warc.Read(reader, compressed)
+	reader, err := warc.NewReader(file, compressed)
+	if err != nil {
+		return err
+	}
+
+	archive, err := reader.ReadAll()
 	if err != nil {
 		return err
 	}
