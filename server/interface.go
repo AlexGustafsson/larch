@@ -24,17 +24,24 @@ func NewControlPanel(server *Server, router *mux.Router) *ControlPanel {
 		Server: server,
 	}
 
-	router.HandleFunc("/", redirect("/larch/list"))
 	router.HandleFunc("", redirect("/larch/"))
-	router.HandleFunc("/list", controlPanel.listArchive)
+	router.HandleFunc("/", controlPanel.listInterface)
+	router.HandleFunc("/records", controlPanel.listRecords)
 	router.HandleFunc("/record/{id}", controlPanel.getRecord)
 	router.HandleFunc("/header/{id}", controlPanel.getHeader)
 	router.HandleFunc("/payload/{id}", controlPanel.getPayload)
+	router.HandleFunc("/sites", controlPanel.listSites)
 
 	return controlPanel
 }
 
-func (controlPanel *ControlPanel) listArchive(response http.ResponseWriter, request *http.Request) {
+func (controlPanel *ControlPanel) listInterface(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("Content-Type", "text/html")
+	response.WriteHeader(200)
+	fmt.Fprint(response, "<html><body><ul><li><a href=\"/larch/records\">/larch/records</a> - List records</li><li><a href=\"/larch/sites\">/larch/sites</a> - List sites</li></ul></body></html>")
+}
+
+func (controlPanel *ControlPanel) listRecords(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("Content-Type", "text/html")
 	response.WriteHeader(200)
 	fmt.Fprintln(response, "<html><body><table><thead><tr><th>ID</th><th>Content Type</th><th>Payload Size (Bytes)</th><th>Link To Record</th><th>Link To Header</th><th>Link To Payload</th></tr></thead><tbody>")
@@ -42,6 +49,27 @@ func (controlPanel *ControlPanel) listArchive(response http.ResponseWriter, requ
 		fmt.Fprintf(response, "<tr><td>%s</td><td>%s</td><td>%d</td><td><a href=\"/larch/record/%s\">Record</a></td><td><a href=\"/larch/header/%s\">Header</a></td><td><a href=\"/larch/payload/%s\">Payload</a></td></tr>", html.EscapeString(record.Header.RecordID), record.Header.ContentType, record.Header.ContentLength, url.QueryEscape(record.Header.RecordID), url.QueryEscape(record.Header.RecordID), url.QueryEscape(record.Header.RecordID))
 	}
 	fmt.Fprintln(response, "</tbody></table></body></html>")
+}
+
+func (controlPanel *ControlPanel) listSites(response http.ResponseWriter, request *http.Request) {
+	sites := make(map[string]bool)
+
+	for _, record := range controlPanel.Server.Archive.Records {
+		if record.Header.TargetURI != "" && record.Header.ContentType == "application/http;msgtype=request" {
+			site, err := url.Parse(record.Header.TargetURI)
+			if err == nil {
+				sites[site.Host] = true
+			}
+		}
+	}
+
+	response.Header().Add("Content-Type", "text/html")
+	response.WriteHeader(200)
+	fmt.Fprintln(response, "<html><body><ul>")
+	for site := range sites {
+		fmt.Fprintf(response, "<li><p>%s</p></li>", html.EscapeString(site))
+	}
+	fmt.Fprintln(response, "</ul></body></html>")
 }
 
 func (controlPanel *ControlPanel) getRecord(response http.ResponseWriter, request *http.Request) {

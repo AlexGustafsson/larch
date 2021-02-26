@@ -37,6 +37,9 @@ func (server *Server) Start(address string, port uint16) {
 		NewControlPanel(server, subrouter)
 	}
 
+	// Handle any path
+	router.PathPrefix("/").HandlerFunc(server.serve)
+
 	httpServer := &http.Server{
 		Handler:      handlers.CompressHandler(handlers.CombinedLoggingHandler(os.Stdout, router)),
 		Addr:         fmt.Sprintf("%s:%d", address, port),
@@ -46,4 +49,10 @@ func (server *Server) Start(address string, port uint16) {
 
 	log.WithFields(log.Fields{"Type": "Web"}).Infof("Listening on TCP %v:%v", address, port)
 	httpServer.ListenAndServe()
+}
+
+func (server *Server) serve(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("Content-Type", "text/html")
+	response.WriteHeader(200)
+	fmt.Fprintln(response, request.URL.Path)
 }
