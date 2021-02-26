@@ -64,7 +64,9 @@ func (server *Server) serve(response http.ResponseWriter, request *http.Request)
 				continue
 			}
 
-			matches := targetURL.Host == server.Site && targetURL.Path == request.URL.Path
+			hostMatches := targetURL.Host == server.Site
+			pathMatches := targetURL.Path == request.URL.Path || targetURL.Path == "" && request.URL.Path == "/" || targetURL.Path == "/" && request.URL.Path == ""
+			matches := hostMatches && pathMatches
 			if !matches {
 				continue
 			}
