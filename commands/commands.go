@@ -128,6 +128,11 @@ var Commands = []*cli.Command{
 				Usage: "Whether or not to treat the input archive as compressed. True by default if extension ends with '.gz'",
 				Value: false,
 			},
+			&cli.StringFlag{
+				Name:     "site",
+				Usage:    "The host part of the site to serve",
+				Required: true,
+			},
 		},
 	},
 }

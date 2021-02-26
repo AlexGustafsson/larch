@@ -26,6 +26,11 @@ func serveCommand(context *cli.Context) error {
 		compressed = strings.HasSuffix(archivePath, ".gz")
 	}
 
+	site := context.String("site")
+	if site == "" {
+		return fmt.Errorf("Expected site to serve")
+	}
+
 	file, err := os.Open(archivePath)
 	if err != nil {
 		return fmt.Errorf("Unable to open archive: %v", err)
@@ -41,7 +46,7 @@ func serveCommand(context *cli.Context) error {
 		return err
 	}
 
-	server := server.NewServer(reader, archive)
+	server := server.NewServer(reader, archive, site)
 	server.EnableInterface = enableInterface
 
 	server.Start(address, port)
