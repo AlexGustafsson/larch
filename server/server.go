@@ -42,6 +42,10 @@ func (server *Server) Start(address string, port uint16) {
 		NewControlPanel(server, subrouter)
 	}
 
+	// Handle rewritten resources
+	resourceRouter := router.PathPrefix("/larch/resource").Subrouter()
+	NewResourceHandler(server, resourceRouter)
+
 	// Handle any path
 	router.PathPrefix("/").HandlerFunc(server.serve)
 
