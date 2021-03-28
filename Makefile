@@ -48,6 +48,10 @@ format: $(source) $(test_source) Makefile
 lint: $(source) $(test_source) Makefile
 	golint .
 
+# Vet Go code
+vet: $(source) $(test_source) Makefile
+	go vet ./...
+
 # Test Go code
 test: $(source) $(test_source) Makefile
 	go test -v ./...
