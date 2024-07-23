@@ -1,3 +1,8 @@
+> [!WARNING]
+> This project was archived 2024-07-23 as its seen no major development nor has
+> any planned development.
+> Consider using [ArchiveBox](https://github.com/ArchiveBox/ArchiveBox) instead.
+
 <p align="center">
   <img src=".github/logo.png" alt="Logo">
 </p>
