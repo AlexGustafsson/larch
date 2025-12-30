@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	urlpkg "net/url"
+
 	"github.com/AlexGustafsson/larch/internal/archivers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
 	"github.com/AlexGustafsson/larch/internal/sources"
@@ -22,7 +24,7 @@ func main() {
 
 	sources := []sources.Source{
 		&sources.URLSource{
-			URL: "https://google.se",
+			URL: "https://google.com",
 		},
 	}
 
@@ -36,8 +38,11 @@ func main() {
 		}
 
 		for _, url := range urls {
-			origin := "github.com"
-			snapshotWriter, err := library.OpenSnapshot(ctx, origin+"/"+strconv.FormatInt(time.Now().UnixMilli(), 10))
+			u, err := urlpkg.Parse(url)
+			if err != nil {
+				panic(err)
+			}
+			snapshotWriter, err := library.OpenSnapshot(ctx, u.Host+"/"+strconv.FormatInt(time.Now().UnixMilli(), 10))
 			if err != nil {
 				panic(err)
 			}
