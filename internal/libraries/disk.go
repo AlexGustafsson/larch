@@ -40,7 +40,7 @@ func newDiskWriter(basePath string, id string) (*diskWriter, error) {
 	}
 
 	index := SnapshotManifest{
-		MediaType: "application/vnd.larch.snapshot.manifest.v1+json",
+		MediaType: "application/vnd.larch.snapshot.index.v1+json",
 		Manifests: []Manifest{},
 	}
 

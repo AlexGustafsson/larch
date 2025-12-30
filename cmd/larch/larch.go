@@ -42,7 +42,25 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
+
 			snapshotWriter, err := library.OpenSnapshot(ctx, u.Host+"/"+strconv.FormatInt(time.Now().UnixMilli(), 10))
+			if err != nil {
+				panic(err)
+			}
+
+			err = snapshotWriter.Index(ctx, libraries.Manifest{
+				MediaType: "application/vnd.larch.snapshot.manifest.v1+json",
+				Layers: []libraries.Layer{
+					{
+						MediaType: "application/vnd.oci.empty.v1+json",
+						Digest:    "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+						Size:      0,
+						Annotations: map[string]string{
+							"larch.snapshot.url": url,
+						},
+					},
+				},
+			})
 			if err != nil {
 				panic(err)
 			}

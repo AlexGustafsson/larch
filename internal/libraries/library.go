@@ -50,7 +50,7 @@ type Layer struct {
 }
 
 type SnapshotManifest struct {
-	// application/vnd.larch.snapshot.manifest.v1+json
+	// application/vnd.larch.snapshot.index.v1+json
 	MediaType string     `json:"mediaType"`
 	Manifests []Manifest `json:"manifests"`
 }
