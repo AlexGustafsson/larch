@@ -13,8 +13,11 @@ import (
 )
 
 func main() {
-	library := &libraries.DiskLibrary{
-		BasePath: "data",
+	// library := &libraries.DiskLibrary{
+	// 	BasePath: "data/disk",
+	// }
+	library := &libraries.BlobLibrary{
+		BasePath: "data/blob",
 	}
 
 	archivers := []archivers.Archiver{

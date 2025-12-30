@@ -96,6 +96,9 @@ func (d *diskWriter) Index(ctx context.Context, manifest Manifest) error {
 	// TODO: Atomic, or just keep in-memory?
 	// TODO: Actually read from file
 	// TODO: Actually append to manifests
+	// TODO: Keeping the file open (RW) for as long as the diskWriter is open
+	// would let us catch that in API requests and return conflict for retries,
+	// right?
 
 	file, err := d.root.OpenFile("index.json", os.O_RDWR, 0644)
 	if err != nil {
