@@ -20,40 +20,6 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 	ctx, cancel := chromedp.NewContext(ctx, chromedp.WithErrorf(func(s string, a ...any) { fmt.Fprintf(os.Stderr, s, a...) }), chromedp.WithBrowserOption(chromedp.WithBrowserLogf(func(s string, a ...any) { fmt.Fprintf(os.Stderr, s, a...) }), chromedp.WithBrowserErrorf(func(s string, a ...any) { fmt.Fprintf(os.Stderr, s, a...) })))
 	defer cancel()
 
-	// import { writeFile } from "fs/promises"
-
-	// import { chromium } from "playwright"
-	// // @ts-expect-error
-	// import { getHookScriptSource, getScriptSource, getZipScriptSource } from "single-file-cli/lib/single-file-script.js"
-
-	// // Fix Access-Control errors when saving resources
-	// const browser = await chromium.launch({ args: ["--disable-web-security"] })
-	// const page = await browser.newPage()
-
-	// // https://github.com/gildas-lormeau/single-file-cli/blob/v2.0.75/lib/cdp-client.js#L235-L243
-	// await page.addInitScript({ content: getHookScriptSource() })
-	// await page.addInitScript({ content: (await getScriptSource({})) + "; window.singlefile = singlefile" })
-
-	// await page.goto("https://developer.mozilla.org/en-US/")
-	// await page.waitForTimeout(3000)
-
-	// // https://github.com/gildas-lormeau/single-file-cli/blob/v2.0.75/single-file-cli-api.js#L258
-	// // https://github.com/gildas-lormeau/single-file-cli/blob/v2.0.75/lib/cdp-client.js#L332
-	// // https://github.com/gildas-lormeau/single-file-core/blob/212a657/single-file.js#L125
-	// // @ts-expect-error
-	// const pageData = await page.evaluate(async options => await singlefile.getPageData(options), {
-	//   zipScript: getZipScriptSource(),
-	//   // Some flags in the link below should work; just convert them to CamelCase
-	//   // https://github.com/gildas-lormeau/single-file-cli/blob/v2.0.75/options.js#L33-L159
-	//   // For example,
-	//   blockImages: true,
-	//   compressHTML: false
-	// })
-
-	// await page.close()
-	// await browser.close()
-	// await writeFile("./mdn.html", pageData.content)
-
 	var screenshot []byte
 	var pdf []byte
 	var html string
@@ -90,29 +56,100 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	w, err := snapshotWriter.NextWriter(ctx, "test.png")
+	configSize, configDigest, err := snapshotWriter.WriteFile(ctx, "chrome/config.json", []byte(`{}`))
 	if err != nil {
 		return err
 	}
 
-	w.Write(screenshot)
-	w.Close()
-
-	w, err = snapshotWriter.NextWriter(ctx, "test.pdf")
+	screenshotSize, screenshotDigest, err := snapshotWriter.WriteFile(ctx, "chrome/screenshot.png", screenshot)
 	if err != nil {
 		return err
 	}
 
-	w.Write(pdf)
-	w.Close()
-
-	w, err = snapshotWriter.NextWriter(ctx, "test.html")
+	err = snapshotWriter.Index(ctx, libraries.Manifest{
+		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
+		Config: libraries.Layer{
+			Digest:    configDigest,
+			MediaType: "vnd.larch.disk.config.v1+json",
+			Size:      configSize,
+			Annotations: map[string]string{
+				"larch.artifact.path": "chrome/config.json",
+			},
+		},
+		Layers: []libraries.Layer{
+			{
+				Digest:    screenshotDigest,
+				MediaType: "image/png",
+				Size:      screenshotSize,
+				Annotations: map[string]string{
+					"larch.artifact.path": "chrome/screenshot.png",
+				},
+			},
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	w.Write([]byte(html))
-	w.Close()
+	pdfSize, pdfDigest, err := snapshotWriter.WriteFile(ctx, "chrome/print.pdf", pdf)
+	if err != nil {
+		return err
+	}
+
+	err = snapshotWriter.Index(ctx, libraries.Manifest{
+		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
+		Config: libraries.Layer{
+			Digest:    configDigest,
+			MediaType: "vnd.larch.disk.config.v1+json",
+			Size:      configSize,
+			Annotations: map[string]string{
+				"larch.artifact.path": "chrome/config.json",
+			},
+		},
+		Layers: []libraries.Layer{
+			{
+				Digest:    pdfDigest,
+				MediaType: "application/pdf",
+				Size:      pdfSize,
+				Annotations: map[string]string{
+					"larch.artifact.path": "chrome/page.pdf",
+				},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	singlepageSize, singlepageDigest, err := snapshotWriter.WriteFile(ctx, "chrome/singlepage.html", []byte(html))
+	if err != nil {
+		return err
+	}
+
+	err = snapshotWriter.Index(ctx, libraries.Manifest{
+		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
+		Config: libraries.Layer{
+			Digest:    configDigest,
+			MediaType: "vnd.larch.disk.config.v1+json",
+			Size:      configSize,
+			Annotations: map[string]string{
+				"larch.artifact.path": "chrome/config.json",
+			},
+		},
+		Layers: []libraries.Layer{
+			{
+				Digest:    singlepageDigest,
+				MediaType: "application/html",
+				Size:      singlepageSize,
+				Annotations: map[string]string{
+					"larch.artifact.path": "chrome/singlepage.html",
+				},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
