@@ -97,13 +97,30 @@ func (d *diskWriter) Index(ctx context.Context, manifest Manifest) error {
 	// TODO: Actually read from file
 	// TODO: Actually append to manifests
 
-	index := SnapshotManifest{
-		MediaType: "application/vnd.larch.snapshot.manifest.v1+json",
-		Manifests: []Manifest{
-			manifest,
-		},
+	file, err := d.root.OpenFile("index.json", os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var index SnapshotManifest
+	if err := json.NewDecoder(file).Decode(&index); err != nil {
+		return err
 	}
 
-	v, _ := json.MarshalIndent(&index, "", "  ")
-	return d.root.WriteFile("index.json", v, 0644)
+	index.Manifests = append(index.Manifests, manifest)
+
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	// Assume the file always grows, no need to truncate
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(index); err != nil {
+		return err
+	}
+
+	return nil
 }
