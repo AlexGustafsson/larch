@@ -33,7 +33,7 @@ func (a *ArchiveOrgArchiver) Archive(ctx context.Context, snapshotWriter librari
 		return err
 	}
 
-	return snapshotWriter.Index(ctx, libraries.Manifest{
+	return snapshotWriter.WriteManifest(ctx, libraries.Manifest{
 		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
 		Config: libraries.Layer{
 			Digest:    configDigest,

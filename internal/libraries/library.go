@@ -6,22 +6,26 @@ import (
 )
 
 type LibraryReader interface {
-	OpenSnapshot(context.Context, string) (SnapshotReader, error)
-	// TODO: Index
+	ReadSnapshot(context.Context, string) (SnapshotReader, error)
+	GetOrigins(context.Context) ([]string, error)
+	GetSnapshots(context.Context, string) ([]string, error)
 }
 
 type LibraryWriter interface {
-	OpenSnapshot(context.Context, string) (SnapshotWriter, error)
+	WriteSnapshot(context.Context, string) (SnapshotWriter, error)
 }
 
 type SnapshotReader interface {
+	Index() SnapshotIndex
 	NextReader(context.Context, string) (DigestReadCloser, error)
+	Close() error
 }
 
 type SnapshotWriter interface {
 	NextWriter(context.Context, string) (DigestWriteCloser, error)
 	WriteFile(context.Context, string, []byte) (int64, string, error)
-	Index(context.Context, Manifest) error
+	WriteManifest(context.Context, Manifest) error
+	Close() error
 }
 
 type DigestWriteCloser interface {
@@ -43,13 +47,15 @@ type Manifest struct {
 }
 
 type Layer struct {
-	Digest      string            `json:"digest"`
+	Digest string `json:"digest"`
+	// TODO: ContentEncoding for compression? Would map to annotation for OCI.
+	// Use brotli for HTML, for example, leave that up to the archiver.
 	MediaType   string            `json:"mediaType"`
 	Size        int64             `json:"size"`
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
-type SnapshotManifest struct {
+type SnapshotIndex struct {
 	// application/vnd.larch.snapshot.index.v1+json
 	MediaType string     `json:"mediaType"`
 	Manifests []Manifest `json:"manifests"`
@@ -80,6 +86,7 @@ type SnapshotManifest struct {
 
 // oci <=> blob on-disk? Why make any difference?
 // tags: latest, shaid per snapshot etc. URL as name?
-// registry.home.internal/larch/example-com/1231231231 <-manifest index, artifact
+// registry.home.internal/larch/index:example.com <- what to put here?
+// registry.home.internal/larch/example.com:1231231231 <-manifest index, artifact
 // registry.home.internal/blobs/sha256/xxxxx
 // registry.home.internal/blobs/sha256/xxxxx

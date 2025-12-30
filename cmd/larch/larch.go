@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -16,8 +17,9 @@ func main() {
 	// library := &libraries.DiskLibrary{
 	// 	BasePath: "data/disk",
 	// }
-	library := &libraries.BlobLibrary{
-		BasePath: "data/blob",
+	library, err := libraries.NewDiskLibrary("data/disk")
+	if err != nil {
+		panic(err)
 	}
 
 	archivers := []archivers.Archiver{
@@ -46,12 +48,12 @@ func main() {
 				panic(err)
 			}
 
-			snapshotWriter, err := library.OpenSnapshot(ctx, u.Host+"/"+strconv.FormatInt(time.Now().UnixMilli(), 10))
+			snapshotWriter, err := library.WriteSnapshot(ctx, u.Host+"/"+strconv.FormatInt(time.Now().UnixMilli(), 10))
 			if err != nil {
 				panic(err)
 			}
 
-			err = snapshotWriter.Index(ctx, libraries.Manifest{
+			err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
 				MediaType: "application/vnd.larch.snapshot.manifest.v1+json",
 				Layers: []libraries.Layer{
 					{
@@ -74,6 +76,27 @@ func main() {
 					panic(err)
 				}
 			}
+		}
+	}
+
+	origins, err := library.GetOrigins(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, origin := range origins {
+		snapshots, err := library.GetSnapshots(ctx, origin)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, snapshot := range snapshots {
+			sn, err := library.ReadSnapshot(ctx, origin+"/"+snapshot)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println(origin, snapshot, len(sn.Index().Manifests))
 		}
 	}
 }

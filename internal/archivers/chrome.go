@@ -66,7 +66,7 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	err = snapshotWriter.Index(ctx, libraries.Manifest{
+	err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
 		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
 		Config: libraries.Layer{
 			Digest:    configDigest,
@@ -96,7 +96,7 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	err = snapshotWriter.Index(ctx, libraries.Manifest{
+	err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
 		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
 		Config: libraries.Layer{
 			Digest:    configDigest,
@@ -126,7 +126,7 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	err = snapshotWriter.Index(ctx, libraries.Manifest{
+	err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
 		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
 		Config: libraries.Layer{
 			Digest:    configDigest,

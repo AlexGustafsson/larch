@@ -47,6 +47,7 @@ libraries:
     options:
       compact: true
       backup: true
+      compress: true
   - name: oci
     type: oci
     path: https://registry.home.internal
