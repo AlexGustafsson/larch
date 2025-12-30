@@ -76,13 +76,13 @@ func (d *DiskLibrary) GetSnapshots(ctx context.Context, origin string) ([]string
 }
 
 // ReadSnapshot implements LibraryReader.
-func (d *DiskLibrary) ReadSnapshot(ctx context.Context, id string) (SnapshotReader, error) {
-	return newDiskSnapshotReader(d.root, id)
+func (d *DiskLibrary) ReadSnapshot(ctx context.Context, origin string, id string) (SnapshotReader, error) {
+	return newDiskSnapshotReader(d.root, filepath.Join(origin, id))
 }
 
 // WriteSnapshot implements LibraryWriter.
-func (d *DiskLibrary) WriteSnapshot(ctx context.Context, id string) (SnapshotWriter, error) {
-	return newDiskSnapshotWriter(d.root, id)
+func (d *DiskLibrary) WriteSnapshot(ctx context.Context, origin string, id string) (SnapshotWriter, error) {
+	return newDiskSnapshotWriter(d.root, filepath.Join(origin, id))
 }
 
 var _ SnapshotReader = (*diskSnapshotReader)(nil)

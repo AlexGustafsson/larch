@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"os"
 	"strconv"
 	"time"
 
 	urlpkg "net/url"
 
 	"github.com/AlexGustafsson/larch/internal/archivers"
+	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
 	"github.com/AlexGustafsson/larch/internal/sources"
 )
@@ -48,7 +50,7 @@ func main() {
 				panic(err)
 			}
 
-			snapshotWriter, err := library.WriteSnapshot(ctx, u.Host+"/"+strconv.FormatInt(time.Now().UnixMilli(), 10))
+			snapshotWriter, err := library.WriteSnapshot(ctx, u.Host, strconv.FormatInt(time.Now().UnixMilli(), 10))
 			if err != nil {
 				panic(err)
 			}
@@ -61,7 +63,8 @@ func main() {
 						Digest:    "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
 						Size:      0,
 						Annotations: map[string]string{
-							"larch.snapshot.url": url,
+							"larch.snapshot.url":  url,
+							"larch.snapshot.date": time.Now().Format(time.RFC3339),
 						},
 					},
 				},
@@ -79,24 +82,17 @@ func main() {
 		}
 	}
 
-	origins, err := library.GetOrigins(ctx)
+	indexer := indexers.NewInMemoryIndex()
+	if err := indexer.IndexLibrary(ctx, library); err != nil {
+		panic(err)
+	}
+
+	snapshots, err := indexer.ListSnapshots(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	for _, origin := range origins {
-		snapshots, err := library.GetSnapshots(ctx, origin)
-		if err != nil {
-			panic(err)
-		}
-
-		for _, snapshot := range snapshots {
-			sn, err := library.ReadSnapshot(ctx, origin+"/"+snapshot)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Println(origin, snapshot, len(sn.Index().Manifests))
-		}
-	}
+	encoder := json.NewEncoder(os.Stderr)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(snapshots)
 }

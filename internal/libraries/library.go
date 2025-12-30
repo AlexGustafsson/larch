@@ -6,13 +6,13 @@ import (
 )
 
 type LibraryReader interface {
-	ReadSnapshot(context.Context, string) (SnapshotReader, error)
+	ReadSnapshot(context.Context, string, string) (SnapshotReader, error)
 	GetOrigins(context.Context) ([]string, error)
 	GetSnapshots(context.Context, string) ([]string, error)
 }
 
 type LibraryWriter interface {
-	WriteSnapshot(context.Context, string) (SnapshotWriter, error)
+	WriteSnapshot(context.Context, string, string) (SnapshotWriter, error)
 }
 
 type SnapshotReader interface {
