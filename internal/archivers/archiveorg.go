@@ -1,11 +1,9 @@
 package archivers
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"io"
+
+	urlpkg "net/url"
 
 	"github.com/AlexGustafsson/larch/internal/libraries"
 )
@@ -14,57 +12,42 @@ type ArchiveOrgArchiver struct {
 }
 
 func (a *ArchiveOrgArchiver) Archive(ctx context.Context, snapshotWriter libraries.SnapshotWriter, url string) error {
-	w, err := snapshotWriter.NextWriter(ctx, "archive.org/url.txt")
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	fileHash := sha256.New()
-
-	contents := bytes.NewReader([]byte("https://web.archive.org/web/github.com/pocket-id/pocket-id"))
-	fileSize, err := io.Copy(w, io.TeeReader(contents, fileHash))
+	// TODO: Actual client
+	u, err := urlpkg.Parse(url)
 	if err != nil {
 		return err
 	}
 
-	if err := w.Close(); err != nil {
-		return err
-	}
+	u.Path = "web/" + u.Host + "/" + u.Path
+	u.Host = "web.archive.org"
+	u.Scheme = "https"
+	u.RawQuery = ""
 
-	w, err = snapshotWriter.NextWriter(ctx, "archive.org/config.json")
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	configFileHash := sha256.New()
-
-	contents = bytes.NewReader([]byte(`{}`))
-	configFileSize, err := io.Copy(w, io.TeeReader(contents, configFileHash))
+	contentSize, contentDigest, err := snapshotWriter.WriteFile(ctx, "archive.org/url.txt", []byte(u.String()))
 	if err != nil {
 		return err
 	}
 
-	if err := w.Close(); err != nil {
+	configSize, configDigest, err := snapshotWriter.WriteFile(ctx, "archive.org/config.json", []byte(`{}`))
+	if err != nil {
 		return err
 	}
 
 	return snapshotWriter.Index(ctx, libraries.Manifest{
 		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
 		Config: libraries.Layer{
-			Digest:    "sha256:" + hex.EncodeToString(configFileHash.Sum(nil)),
+			Digest:    configDigest,
 			MediaType: "vnd.larch.disk.config.v1+json",
-			Size:      configFileSize,
+			Size:      configSize,
 			Annotations: map[string]string{
 				"larch.artifact.path": "archive.org/config.json",
 			},
 		},
 		Layers: []libraries.Layer{
 			{
-				Digest:    "sha256:" + hex.EncodeToString(fileHash.Sum(nil)),
+				Digest:    contentDigest,
 				MediaType: "text/plain",
-				Size:      fileSize,
+				Size:      contentSize,
 				Annotations: map[string]string{
 					"larch.artifact.path": "archive.org/url.txt",
 				},
