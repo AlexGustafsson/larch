@@ -1,6 +1,7 @@
 package libraries
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -55,13 +56,39 @@ func newDiskWriter(basePath string, id string) (*diskWriter, error) {
 }
 
 // NextWriter implements SnapshotWriter.
-func (d *diskWriter) NextWriter(ctx context.Context, path string) (io.WriteCloser, error) {
+func (d *diskWriter) NextWriter(ctx context.Context, path string) (DigestWriteCloser, error) {
 	err := d.root.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return nil, err
 	}
 
-	return d.root.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
+	w, err := d.root.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	return newDigestWriter(w), nil
+}
+
+// WriteFile implements SnapshotWriter.
+func (d *diskWriter) WriteFile(ctx context.Context, path string, data []byte) (int64, string, error) {
+	w, err := d.NextWriter(ctx, path)
+	if err != nil {
+		return 0, "", err
+	}
+	defer w.Close()
+
+	n, err := io.Copy(w, bytes.NewReader(data))
+	if err != nil {
+		return n, "", err
+	}
+
+	if err := w.Close(); err != nil {
+		return n, "", err
+	}
+
+	digest := w.Digest()
+	return n, digest, nil
 }
 
 // Index implements SnapshotWriter.

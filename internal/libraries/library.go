@@ -15,12 +15,25 @@ type LibraryWriter interface {
 }
 
 type SnapshotReader interface {
-	NextReader(context.Context, string) (io.ReadCloser, error)
+	NextReader(context.Context, string) (DigestReadCloser, error)
 }
 
 type SnapshotWriter interface {
-	NextWriter(context.Context, string) (io.WriteCloser, error)
+	NextWriter(context.Context, string) (DigestWriteCloser, error)
+	WriteFile(context.Context, string, []byte) (int64, string, error)
 	Index(context.Context, Manifest) error
+}
+
+type DigestWriteCloser interface {
+	io.Writer
+	io.Closer
+	Digest() string
+}
+
+type DigestReadCloser interface {
+	io.Reader
+	io.Closer
+	Digest() string
 }
 
 type Manifest struct {
