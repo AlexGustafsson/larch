@@ -10,6 +10,7 @@ import (
 
 	"github.com/AlexGustafsson/larch/internal/api"
 	"github.com/AlexGustafsson/larch/internal/archivers"
+	"github.com/AlexGustafsson/larch/internal/archivers/chrome"
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
 	"github.com/AlexGustafsson/larch/internal/libraries/disk"
@@ -26,8 +27,20 @@ func main() {
 	}
 
 	archivers := []archivers.Archiver{
-		&archivers.ChromeArchiver{},
-		&archivers.ArchiveOrgArchiver{},
+		&chrome.Archiver{
+			SaveSinglefile: true,
+			SavePDF:        true,
+			ScreenshotResolutions: []chrome.Resolution{
+				{
+					Width:  1280,
+					Height: 720,
+				},
+				{
+					Width:  1920,
+					Height: 1080,
+				},
+			},
+		},
 	}
 
 	sources := []sources.Source{
