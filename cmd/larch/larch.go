@@ -12,6 +12,7 @@ import (
 	"github.com/AlexGustafsson/larch/internal/archivers"
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
+	"github.com/AlexGustafsson/larch/internal/libraries/disk"
 	"github.com/AlexGustafsson/larch/internal/sources"
 )
 
@@ -19,7 +20,7 @@ func main() {
 	// library := &libraries.DiskLibrary{
 	// 	BasePath: "data/disk",
 	// }
-	library, err := libraries.NewDiskLibrary("data/disk")
+	library, err := disk.NewLibrary("data/disk")
 	if err != nil {
 		panic(err)
 	}

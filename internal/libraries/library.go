@@ -6,37 +6,64 @@ import (
 )
 
 type LibraryReader interface {
+	// ReadSnapshot opens a [SnapshotReader] for the given origin and snapshot id.
 	ReadSnapshot(context.Context, string, string) (SnapshotReader, error)
+	// ReadArtifact opens a [ArtifactReader] for the artifact of the given
+	// digest.
+	ReadArtifact(context.Context, string) (ArtifactReader, error)
+	// GetOrigins returns all origins of the library.
 	GetOrigins(context.Context) ([]string, error)
+	// GetSnapshots returns the id of all snapshots of an origin.
 	GetSnapshots(context.Context, string) ([]string, error)
+	// Close closes the library.
+	Close() error
 }
 
 type LibraryWriter interface {
+	// WriteSnapshot opens a [SnapshotWriter] for the given origin and snapshot
+	// id.
 	WriteSnapshot(context.Context, string, string) (SnapshotWriter, error)
 }
 
 type SnapshotReader interface {
+	// Index returns the snapshot's index.
 	Index() SnapshotIndex
-	NextReader(context.Context, string) (DigestReadCloser, error)
+	// NextArtifactReader returns a [ArtifactReader] for the given digest.
+	NextArtifactReader(context.Context, string) (ArtifactReader, error)
+	// Close closes the reader.
 	Close() error
 }
 
 type SnapshotWriter interface {
-	NextWriter(context.Context, string) (DigestWriteCloser, error)
-	WriteFile(context.Context, string, []byte) (int64, string, error)
+	// NextArtifactWriter returns a [ArtifactWriter] for the given file name.
+	// The name may be unused by the underlying implementation and should be
+	// treated as a hint.
+	NextArtifactWriter(context.Context, string) (ArtifactWriter, error)
+	// WriteArtifact writes to a file by name and returns its size and digest.
+	// The name may be unused by the underlying implementation and should be
+	// treated as a hint.
+	WriteArtifact(context.Context, string, []byte) (int64, string, error)
+	// WriteArtifactManifest writes the manifest to the index.
 	WriteArtifactManifest(context.Context, ArtifactManifest) error
+	// Close closes the writer.
 	Close() error
 }
 
-type DigestWriteCloser interface {
+type ArtifactWriter interface {
 	io.Writer
 	io.Closer
+	// Digest returns the written content's digest formatted like so:
+	// <algorithm>:<hex-encoded digest>.
+	// The value may be empty until the writer is closed.
 	Digest() string
 }
 
-type DigestReadCloser interface {
+type ArtifactReader interface {
 	io.Reader
 	io.Closer
+	// Digest returns the read content's digest formatted like so:
+	// <algorithm>:<hex-encoded digest>.
+	// The value may be empty until the reader is closed.
 	Digest() string
 }
 

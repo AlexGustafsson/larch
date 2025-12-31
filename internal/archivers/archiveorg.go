@@ -23,7 +23,7 @@ func (a *ArchiveOrgArchiver) Archive(ctx context.Context, snapshotWriter librari
 	u.Scheme = "https"
 	u.RawQuery = ""
 
-	size, digest, err := snapshotWriter.WriteFile(ctx, "archive.org/url.txt", []byte(u.String()))
+	size, digest, err := snapshotWriter.WriteArtifact(ctx, "archive.org/url.txt", []byte(u.String()))
 	if err != nil {
 		return err
 	}

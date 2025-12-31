@@ -56,7 +56,7 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	screenshotSize, screenshotDigest, err := snapshotWriter.WriteFile(ctx, "chrome/screenshot.png", screenshot)
+	screenshotSize, screenshotDigest, err := snapshotWriter.WriteArtifact(ctx, "chrome/screenshot.png", screenshot)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	pdfSize, pdfDigest, err := snapshotWriter.WriteFile(ctx, "chrome/print.pdf", pdf)
+	pdfSize, pdfDigest, err := snapshotWriter.WriteArtifact(ctx, "chrome/print.pdf", pdf)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	singlepageSize, singlepageDigest, err := snapshotWriter.WriteFile(ctx, "chrome/singlepage.html", []byte(html))
+	singlepageSize, singlepageDigest, err := snapshotWriter.WriteArtifact(ctx, "chrome/singlepage.html", []byte(html))
 	if err != nil {
 		return err
 	}

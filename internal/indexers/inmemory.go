@@ -13,11 +13,13 @@ var _ Indexer = (*InMemoryIndex)(nil)
 
 type InMemoryIndex struct {
 	snapshots map[string]Snapshot
+	artifacts map[string]Artifact
 }
 
 func NewInMemoryIndex() *InMemoryIndex {
 	return &InMemoryIndex{
 		snapshots: make(map[string]Snapshot),
+		artifacts: make(map[string]Artifact),
 	}
 }
 
@@ -66,12 +68,15 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id str
 	}
 
 	for _, manifest := range index.Artifacts {
-		snapshot.Artifacts = append(snapshot.Artifacts, Artifact{
+		artifact := Artifact{
 			ContentType:     manifest.ContentType,
 			ContentEncoding: manifest.ContentEncoding,
 			Digest:          manifest.Digest,
 			Size:            manifest.Size,
-		})
+		}
+
+		snapshot.Artifacts = append(snapshot.Artifacts, artifact)
+		i.artifacts[artifact.Digest] = artifact
 	}
 
 	i.snapshots[origin+"/"+id] = snapshot
@@ -81,4 +86,13 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id str
 // ListSnapshots implements Indexer.
 func (i *InMemoryIndex) ListSnapshots(context.Context) ([]Snapshot, error) {
 	return slices.Collect(maps.Values(i.snapshots)), nil
+}
+
+func (i *InMemoryIndex) GetArtifact(ctx context.Context, digest string) (*Artifact, error) {
+	artifact, ok := i.artifacts[digest]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return &artifact, nil
 }
