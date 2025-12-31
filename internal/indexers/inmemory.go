@@ -54,23 +54,24 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id str
 	index := snapshotReader.Index()
 
 	// TODO: Fault tolerance
-	url := index.Manifests[0].Layers[0].Annotations["larch.snapshot.url"]
-	date, _ := time.Parse(time.RFC3339, index.Manifests[0].Layers[0].Annotations["larch.snapshot.date"])
+	url := index.Artifacts[0].Annotations["larch.snapshot.url"]
+	date, _ := time.Parse(time.RFC3339, index.Artifacts[0].Annotations["larch.snapshot.date"])
 
 	snapshot := Snapshot{
 		URL:       url,
+		Origin:    origin,
+		ID:        id,
 		Date:      date,
 		Artifacts: make([]Artifact, 0),
 	}
 
-	for _, manifest := range index.Manifests {
-		for _, layer := range manifest.Layers {
-			snapshot.Artifacts = append(snapshot.Artifacts, Artifact{
-				Type:   layer.MediaType,
-				Digest: layer.Digest,
-				Size:   layer.Size,
-			})
-		}
+	for _, manifest := range index.Artifacts {
+		snapshot.Artifacts = append(snapshot.Artifacts, Artifact{
+			ContentType:     manifest.ContentType,
+			ContentEncoding: manifest.ContentEncoding,
+			Digest:          manifest.Digest,
+			Size:            manifest.Size,
+		})
 	}
 
 	i.snapshots[origin+"/"+id] = snapshot

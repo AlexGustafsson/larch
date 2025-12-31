@@ -122,6 +122,7 @@ func (d *diskSnapshotReader) Index() SnapshotIndex {
 }
 
 // NextReader implements SnapshotReader.
+// TODO: This should probably just be a digest instead, right?
 func (d *diskSnapshotReader) NextReader(ctx context.Context, name string) (DigestReadCloser, error) {
 	file, err := d.root.Open(name)
 	if err != nil {
@@ -164,8 +165,8 @@ func newDiskSnapshotWriter(root *os.Root, id string) (*diskSnapshotWriter, error
 	}
 
 	index := SnapshotIndex{
-		MediaType: "application/vnd.larch.snapshot.index.v1+json",
-		Manifests: make([]Manifest, 0),
+		Schema:    "application/vnd.larch.snapshot.index.v1+json",
+		Artifacts: make([]ArtifactManifest, 0),
 	}
 	if created {
 		v, _ := json.MarshalIndent(&index, "", "  ")
@@ -230,14 +231,14 @@ func (d *diskSnapshotWriter) WriteFile(ctx context.Context, path string, data []
 	return n, digest, nil
 }
 
-// WriteManifest implements SnapshotWriter.
-func (d *diskSnapshotWriter) WriteManifest(ctx context.Context, manifest Manifest) error {
+// WriteArtifactManifest implements SnapshotWriter.
+func (d *diskSnapshotWriter) WriteArtifactManifest(ctx context.Context, manifest ArtifactManifest) error {
 	_, err := d.indexFile.Seek(0, 0)
 	if err != nil {
 		return err
 	}
 
-	d.index.Manifests = append(d.index.Manifests, manifest)
+	d.index.Artifacts = append(d.index.Artifacts, manifest)
 
 	_, err = d.indexFile.Seek(0, 0)
 	if err != nil {

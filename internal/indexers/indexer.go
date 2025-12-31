@@ -15,12 +15,15 @@ type Indexer interface {
 
 type Snapshot struct {
 	URL       string
+	Origin    string
+	ID        string
 	Date      time.Time
 	Artifacts []Artifact
 }
 
 type Artifact struct {
-	Type   string
-	Digest string
-	Size   int64
+	ContentType     string
+	ContentEncoding string
+	Digest          string
+	Size            int64
 }

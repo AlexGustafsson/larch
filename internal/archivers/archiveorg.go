@@ -23,35 +23,18 @@ func (a *ArchiveOrgArchiver) Archive(ctx context.Context, snapshotWriter librari
 	u.Scheme = "https"
 	u.RawQuery = ""
 
-	contentSize, contentDigest, err := snapshotWriter.WriteFile(ctx, "archive.org/url.txt", []byte(u.String()))
+	size, digest, err := snapshotWriter.WriteFile(ctx, "archive.org/url.txt", []byte(u.String()))
 	if err != nil {
 		return err
 	}
 
-	configSize, configDigest, err := snapshotWriter.WriteFile(ctx, "archive.org/config.json", []byte(`{}`))
-	if err != nil {
-		return err
-	}
-
-	return snapshotWriter.WriteManifest(ctx, libraries.Manifest{
-		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
-		Config: libraries.Layer{
-			Digest:    configDigest,
-			MediaType: "vnd.larch.disk.config.v1+json",
-			Size:      configSize,
-			Annotations: map[string]string{
-				"larch.artifact.path": "archive.org/config.json",
-			},
-		},
-		Layers: []libraries.Layer{
-			{
-				Digest:    contentDigest,
-				MediaType: "text/plain",
-				Size:      contentSize,
-				Annotations: map[string]string{
-					"larch.artifact.path": "archive.org/url.txt",
-				},
-			},
+	return snapshotWriter.WriteArtifactManifest(ctx, libraries.ArtifactManifest{
+		Digest:      digest,
+		ContentType: "text/plain",
+		Size:        size,
+		Annotations: map[string]string{
+			"larch.artifact.path": "archive.org/url.txt",
+			"larch.artifact.type": "vnd.larch.archive.org.url.v1",
 		},
 	})
 }

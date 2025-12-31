@@ -24,7 +24,7 @@ type SnapshotReader interface {
 type SnapshotWriter interface {
 	NextWriter(context.Context, string) (DigestWriteCloser, error)
 	WriteFile(context.Context, string, []byte) (int64, string, error)
-	WriteManifest(context.Context, Manifest) error
+	WriteArtifactManifest(context.Context, ArtifactManifest) error
 	Close() error
 }
 
@@ -40,25 +40,22 @@ type DigestReadCloser interface {
 	Digest() string
 }
 
-type Manifest struct {
-	MediaType string  `json:"mediaType"`
-	Config    Layer   `json:"config,omitzero"`
-	Layers    []Layer `json:"layers,omitempty"`
-}
-
-type Layer struct {
-	Digest string `json:"digest"`
+// NOTE: There's no reason why an ArtifactManifest would not follow its parent's
+// SnapshotIndex' content type.
+type ArtifactManifest struct {
+	ContentType string `json:"contentType"`
+	Digest      string `json:"digest"`
+	Size        int64  `json:"size"`
 	// TODO: ContentEncoding for compression? Would map to annotation for OCI.
 	// Use brotli for HTML, for example, leave that up to the archiver.
-	MediaType   string            `json:"mediaType"`
-	Size        int64             `json:"size"`
-	Annotations map[string]string `json:"annotations,omitempty"`
+	ContentEncoding string            `json:"contentEncoding,omitempty"`
+	Annotations     map[string]string `json:"annotations,omitempty"`
 }
 
 type SnapshotIndex struct {
 	// application/vnd.larch.snapshot.index.v1+json
-	MediaType string     `json:"mediaType"`
-	Manifests []Manifest `json:"manifests"`
+	Schema    string             `json:"schema"`
+	Artifacts []ArtifactManifest `json:"artifacts"`
 }
 
 // IDEA: Index is just index, could be read on-boot? How would that work in

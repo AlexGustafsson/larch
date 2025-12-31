@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"os"
 	"strconv"
 	"time"
 
+	"net/http"
 	urlpkg "net/url"
 
+	"github.com/AlexGustafsson/larch/internal/api"
 	"github.com/AlexGustafsson/larch/internal/archivers"
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
@@ -55,44 +55,52 @@ func main() {
 				panic(err)
 			}
 
-			err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
-				MediaType: "application/vnd.larch.snapshot.manifest.v1+json",
-				Layers: []libraries.Layer{
-					{
-						MediaType: "application/vnd.oci.empty.v1+json",
-						Digest:    "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-						Size:      0,
-						Annotations: map[string]string{
-							"larch.snapshot.url":  url,
-							"larch.snapshot.date": time.Now().Format(time.RFC3339),
-						},
-					},
+			err = snapshotWriter.WriteArtifactManifest(ctx, libraries.ArtifactManifest{
+				ContentType: "application/vnd.larch.snapshot.manifest.v1+json",
+				Digest:      "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+				Size:        0,
+				Annotations: map[string]string{
+					"larch.snapshot.url":  url,
+					"larch.snapshot.date": time.Now().Format(time.RFC3339),
 				},
 			})
 			if err != nil {
+				snapshotWriter.Close()
 				panic(err)
 			}
 
 			for _, archiver := range archivers {
 				err := archiver.Archive(ctx, snapshotWriter, url)
 				if err != nil {
+					snapshotWriter.Close()
 					panic(err)
 				}
+			}
+
+			if err := snapshotWriter.Close(); err != nil {
+				panic(err)
 			}
 		}
 	}
 
-	indexer := indexers.NewInMemoryIndex()
-	if err := indexer.IndexLibrary(ctx, library); err != nil {
+	index := indexers.NewInMemoryIndex()
+	if err := index.IndexLibrary(ctx, library); err != nil {
 		panic(err)
 	}
 
-	snapshots, err := indexer.ListSnapshots(ctx)
-	if err != nil {
-		panic(err)
+	apiServer := api.NewServer(index, library)
+
+	mux := http.NewServeMux()
+
+	mux.Handle("/api/v1/", apiServer)
+
+	server := http.Server{
+		Addr:    ":8080",
+		Handler: mux,
 	}
 
-	encoder := json.NewEncoder(os.Stderr)
-	encoder.SetIndent("", "  ")
-	encoder.Encode(snapshots)
+	err = server.ListenAndServe()
+	if err != http.ErrServerClosed && err != nil {
+		panic(err)
+	}
 }

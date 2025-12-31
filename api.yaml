@@ -1,0 +1,15 @@
+# /api/v1/snapshots
+# /api/v1/snapshots/google.com
+# /api/v1/snapshots/google.com/17456782123
+# NOTE: Not great for client-side caching as the same blob content could have
+# different URLs
+# /api/v1/snapshots/google.com/17456782123/blobs/sha256/adsadasdsadasdsadasdasdas
+# NOTE: Not easily implemented by all libraries, but if the library supports it,
+# we could redirect to this endpoint for improved caching?
+# NOTE: The API should expose indexed blobs etc. so why couldn't it support a
+# more generic blob?
+# /api/v1/blobs/sha256/adsadasdsadasdsadasdasdas
+# If we deal with blobs, why handle paths at all, like when writing? Just for
+# disk storage? Is anyone ever really going to look at the storage? Yes, maybe.
+# create links? But that would screw with content encoding any way (if enabled).
+# So the use case for disk is to have everything else turned off anyway?

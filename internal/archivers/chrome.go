@@ -56,35 +56,18 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	configSize, configDigest, err := snapshotWriter.WriteFile(ctx, "chrome/config.json", []byte(`{}`))
-	if err != nil {
-		return err
-	}
-
 	screenshotSize, screenshotDigest, err := snapshotWriter.WriteFile(ctx, "chrome/screenshot.png", screenshot)
 	if err != nil {
 		return err
 	}
 
-	err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
-		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
-		Config: libraries.Layer{
-			Digest:    configDigest,
-			MediaType: "vnd.larch.disk.config.v1+json",
-			Size:      configSize,
-			Annotations: map[string]string{
-				"larch.artifact.path": "chrome/config.json",
-			},
-		},
-		Layers: []libraries.Layer{
-			{
-				Digest:    screenshotDigest,
-				MediaType: "image/png",
-				Size:      screenshotSize,
-				Annotations: map[string]string{
-					"larch.artifact.path": "chrome/screenshot.png",
-				},
-			},
+	err = snapshotWriter.WriteArtifactManifest(ctx, libraries.ArtifactManifest{
+		Digest:      screenshotDigest,
+		ContentType: "image/png",
+		Size:        screenshotSize,
+		Annotations: map[string]string{
+			"larch.artifact.path": "chrome/screenshot.png",
+			"larch.artifact.type": "vnd.larch.chrome.screenshot.v1",
 		},
 	})
 	if err != nil {
@@ -96,25 +79,13 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
-		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
-		Config: libraries.Layer{
-			Digest:    configDigest,
-			MediaType: "vnd.larch.disk.config.v1+json",
-			Size:      configSize,
-			Annotations: map[string]string{
-				"larch.artifact.path": "chrome/config.json",
-			},
-		},
-		Layers: []libraries.Layer{
-			{
-				Digest:    pdfDigest,
-				MediaType: "application/pdf",
-				Size:      pdfSize,
-				Annotations: map[string]string{
-					"larch.artifact.path": "chrome/page.pdf",
-				},
-			},
+	err = snapshotWriter.WriteArtifactManifest(ctx, libraries.ArtifactManifest{
+		Digest:      pdfDigest,
+		ContentType: "application/pdf",
+		Size:        pdfSize,
+		Annotations: map[string]string{
+			"larch.artifact.path": "chrome/page.pdf",
+			"larch.artifact.type": "vnd.larch.chrome.pdf.v1",
 		},
 	})
 	if err != nil {
@@ -126,25 +97,13 @@ func (a *ChromeArchiver) Archive(ctx context.Context, snapshotWriter libraries.S
 		return err
 	}
 
-	err = snapshotWriter.WriteManifest(ctx, libraries.Manifest{
-		MediaType: "application/vnd.larch.artifact.manifest.v1+json",
-		Config: libraries.Layer{
-			Digest:    configDigest,
-			MediaType: "vnd.larch.disk.config.v1+json",
-			Size:      configSize,
-			Annotations: map[string]string{
-				"larch.artifact.path": "chrome/config.json",
-			},
-		},
-		Layers: []libraries.Layer{
-			{
-				Digest:    singlepageDigest,
-				MediaType: "application/html",
-				Size:      singlepageSize,
-				Annotations: map[string]string{
-					"larch.artifact.path": "chrome/singlepage.html",
-				},
-			},
+	err = snapshotWriter.WriteArtifactManifest(ctx, libraries.ArtifactManifest{
+		Digest:      singlepageDigest,
+		ContentType: "application/html",
+		Size:        singlepageSize,
+		Annotations: map[string]string{
+			"larch.artifact.path": "chrome/singlepage.html",
+			"larch.artifact.type": "vnd.larch.chrome.singlepage.v1",
 		},
 	})
 	if err != nil {
