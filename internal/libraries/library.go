@@ -34,6 +34,11 @@ type SnapshotReader interface {
 	Close() error
 }
 
+// TODO: It would be nice to optionally supply a digest, that would let the
+// writer not calculate it and could allow for features like not writing the
+// file to disk if it already exists or not even accepting it from a worker if
+// it exists - saving us some disk writes. The Chrome archiver, for example, has
+// all the data in-memory so it is trivial to hash before writing.
 type SnapshotWriter interface {
 	// NextArtifactWriter returns a [ArtifactWriter] for the given file name.
 	// The name may be unused by the underlying implementation and should be

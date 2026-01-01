@@ -2,22 +2,21 @@ package main
 
 import (
 	"context"
-	"strconv"
+	"log/slog"
 	"time"
 
 	"net/http"
-	urlpkg "net/url"
 
 	"github.com/AlexGustafsson/larch/internal/api"
-	"github.com/AlexGustafsson/larch/internal/archivers"
-	"github.com/AlexGustafsson/larch/internal/archivers/chrome"
 	"github.com/AlexGustafsson/larch/internal/indexers"
-	"github.com/AlexGustafsson/larch/internal/libraries"
 	"github.com/AlexGustafsson/larch/internal/libraries/disk"
-	"github.com/AlexGustafsson/larch/internal/sources"
+	"github.com/AlexGustafsson/larch/internal/worker"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+
 	// library := &libraries.DiskLibrary{
 	// 	BasePath: "data/disk",
 	// }
@@ -26,95 +25,71 @@ func main() {
 		panic(err)
 	}
 
-	archivers := []archivers.Archiver{
-		&chrome.Archiver{
-			SaveSinglefile: true,
-			SavePDF:        true,
-			ScreenshotResolutions: []chrome.Resolution{
-				{
-					Width:  1280,
-					Height: 720,
-				},
-				{
-					Width:  1920,
-					Height: 1080,
-				},
-			},
-		},
-	}
-
-	sources := []sources.Source{
-		&sources.URLSource{
-			URL: "https://google.com",
-		},
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-
-	for _, source := range sources {
-		urls, err := source.URLs(ctx)
-		if err != nil {
-			panic(err)
-		}
-
-		for _, url := range urls {
-			u, err := urlpkg.Parse(url)
-			if err != nil {
-				panic(err)
-			}
-
-			snapshotWriter, err := library.WriteSnapshot(ctx, u.Host, strconv.FormatInt(time.Now().UnixMilli(), 10))
-			if err != nil {
-				panic(err)
-			}
-
-			err = snapshotWriter.WriteArtifactManifest(ctx, libraries.ArtifactManifest{
-				ContentType: "application/vnd.larch.snapshot.manifest.v1+json",
-				Digest:      "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-				Size:        0,
-				Annotations: map[string]string{
-					"larch.snapshot.url":  url,
-					"larch.snapshot.date": time.Now().Format(time.RFC3339),
-				},
-			})
-			if err != nil {
-				snapshotWriter.Close()
-				panic(err)
-			}
-
-			for _, archiver := range archivers {
-				err := archiver.Archive(ctx, snapshotWriter, url)
-				if err != nil {
-					snapshotWriter.Close()
-					panic(err)
-				}
-			}
-
-			if err := snapshotWriter.Close(); err != nil {
-				panic(err)
-			}
-		}
-	}
 
 	index := indexers.NewInMemoryIndex()
 	if err := index.IndexLibrary(ctx, library); err != nil {
 		panic(err)
 	}
 
-	apiServer := api.NewServer(index, library)
+	scheduler := worker.NewScheduler()
 
-	mux := http.NewServeMux()
+	webMux := http.NewServeMux()
 
-	mux.Handle("/api/v1/", apiServer)
+	webMux.Handle("/api/v1/", api.NewServer(index, library))
 
-	server := http.Server{
+	webServer := http.Server{
 		Addr:    ":8080",
-		Handler: mux,
+		Handler: webMux,
 	}
 
-	err = server.ListenAndServe()
-	if err != http.ErrServerClosed && err != nil {
+	workerServer := http.Server{
+		Addr:    ":8081",
+		Handler: worker.NewAPI(scheduler, library),
+	}
+
+	var wg errgroup.Group
+
+	// Serve API + web
+	wg.Go(func() error {
+		err := webServer.ListenAndServe()
+		if err != http.ErrServerClosed && err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	// Serve worker API
+	wg.Go(func() error {
+		err := workerServer.ListenAndServe()
+		if err != http.ErrServerClosed && err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	// TODO: Make "included" worker optional
+	wg.Go(func() error {
+		w, err := worker.NewWorker(ctx, "http://localhost:8081")
+		if err != nil {
+			return err
+		}
+
+		for {
+			// TODO: Take timeouts from scheduler through the API instead?
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+			err := w.Work(ctx)
+			cancel()
+			if err != nil {
+				slog.Warn("Worker failed to process", slog.Any("error", err))
+			}
+		}
+	})
+
+	if err := wg.Wait(); err != nil {
 		panic(err)
 	}
 }

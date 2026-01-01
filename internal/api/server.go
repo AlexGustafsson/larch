@@ -89,6 +89,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return
 		}
 
+		// TODO: Support multiple libraries
 		artifactReader, err := library.ReadArtifact(r.Context(), digest)
 		if err != nil {
 			slog.Error("Failed to read artifact", slog.Any("error", err))
