@@ -10,7 +10,6 @@ import (
 	"github.com/AlexGustafsson/larch/internal/api"
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries/disk"
-	"github.com/AlexGustafsson/larch/internal/worker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -33,8 +32,6 @@ func main() {
 		panic(err)
 	}
 
-	scheduler := worker.NewScheduler()
-
 	webMux := http.NewServeMux()
 
 	webMux.Handle("/api/v1/", api.NewServer(index, library))
@@ -42,11 +39,6 @@ func main() {
 	webServer := http.Server{
 		Addr:    ":8080",
 		Handler: webMux,
-	}
-
-	workerServer := http.Server{
-		Addr:    ":8081",
-		Handler: worker.NewAPI(scheduler, library),
 	}
 
 	var wg errgroup.Group
@@ -59,34 +51,6 @@ func main() {
 		}
 
 		return nil
-	})
-
-	// Serve worker API
-	wg.Go(func() error {
-		err := workerServer.ListenAndServe()
-		if err != http.ErrServerClosed && err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	// TODO: Make "included" worker optional
-	wg.Go(func() error {
-		w, err := worker.NewWorker(ctx, "http://localhost:8081")
-		if err != nil {
-			return err
-		}
-
-		for {
-			// TODO: Take timeouts from scheduler through the API instead?
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-			err := w.Work(ctx)
-			cancel()
-			if err != nil {
-				slog.Warn("Worker failed to process", slog.Any("error", err))
-			}
-		}
 	})
 
 	if err := wg.Wait(); err != nil {

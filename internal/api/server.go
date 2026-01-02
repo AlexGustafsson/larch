@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
@@ -26,8 +28,101 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return
 		}
 
+		embeddedSnapshots := make([]Snapshot, 0)
+
+		for _, snapshot := range snapshots {
+			embeddedArtifacts := make([]Artifact, 0)
+			for _, artifact := range snapshot.Artifacts {
+				algorithm, digest, _ := strings.Cut(artifact.Digest, ":")
+				embeddedArtifacts = append(embeddedArtifacts, Artifact{
+					ContentType:     artifact.ContentType,
+					ContentEncoding: artifact.ContentEncoding,
+					Digest:          artifact.Digest,
+					Size:            artifact.Size,
+					Links: ArtifactLinks{
+						Curies: []Link{
+							{
+								Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+								Name:      "larch",
+								Templated: true,
+							},
+						},
+						Self: Link{
+							Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts/%s/%s", snapshot.Origin, snapshot.ID, algorithm, digest),
+						},
+						Snapshot: Link{
+							Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+						},
+						Origin: Link{
+							Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+						},
+						Blob: Link{
+							Href: fmt.Sprintf("/api/v1/blobs/%s/%s", algorithm, digest),
+						},
+					},
+				})
+			}
+
+			embeddedSnapshots = append(embeddedSnapshots, Snapshot{
+				ID:     snapshot.ID,
+				URL:    snapshot.URL,
+				Origin: snapshot.Origin,
+				Date:   snapshot.Date,
+				Embedded: SnapshotEmbedded{
+					Artifacts: embeddedArtifacts,
+				},
+				Links: SnapshotLinks{
+					Curies: []Link{
+						{
+							Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+							Name:      "larch",
+							Templated: true,
+						},
+					},
+					Self: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+					},
+					Origin: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+					},
+				},
+			})
+		}
+
+		page := Page[SnapshotPageEmbedded]{
+			Page:  1,
+			Size:  30,
+			Count: len(snapshots),
+			Total: len(snapshots),
+			Embedded: SnapshotPageEmbedded{
+				Snapshots: embeddedSnapshots,
+			},
+			Links: PageLinks{
+				Curies: []Link{
+					{
+						Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+						Name:      "larch",
+						Templated: true,
+					},
+				},
+				Self: Link{
+					Href: "/api/v1/snapshots?page=1",
+				},
+				First: Link{
+					Href: "/api/v1/snapshots?page=1",
+				},
+				Last: Link{
+					Href: "/api/v1/snapshots?page=1",
+				},
+				Page: Link{
+					Href:      "/api/v1/snapshots?page={page}",
+					Templated: true,
+				},
+			},
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(snapshots)
+		json.NewEncoder(w).Encode(page)
 	})
 
 	mux.HandleFunc("/api/v1/snapshots/{origin}", func(w http.ResponseWriter, r *http.Request) {
@@ -44,8 +139,102 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return snapshot.Origin != origin
 		})
 
+		// TODO: Shared formatting logic with snapshot endpoint
+		embeddedSnapshots := make([]Snapshot, 0)
+
+		for _, snapshot := range snapshots {
+			embeddedArtifacts := make([]Artifact, 0)
+			for _, artifact := range snapshot.Artifacts {
+				algorithm, digest, _ := strings.Cut(artifact.Digest, ":")
+				embeddedArtifacts = append(embeddedArtifacts, Artifact{
+					ContentType:     artifact.ContentType,
+					ContentEncoding: artifact.ContentEncoding,
+					Digest:          artifact.Digest,
+					Size:            artifact.Size,
+					Links: ArtifactLinks{
+						Curies: []Link{
+							{
+								Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+								Name:      "larch",
+								Templated: true,
+							},
+						},
+						Self: Link{
+							Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts/%s/%s", snapshot.Origin, snapshot.ID, algorithm, digest),
+						},
+						Snapshot: Link{
+							Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+						},
+						Origin: Link{
+							Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+						},
+						Blob: Link{
+							Href: fmt.Sprintf("/api/v1/blobs/%s/%s", algorithm, digest),
+						},
+					},
+				})
+			}
+
+			embeddedSnapshots = append(embeddedSnapshots, Snapshot{
+				ID:     snapshot.ID,
+				URL:    snapshot.URL,
+				Origin: snapshot.Origin,
+				Date:   snapshot.Date,
+				Embedded: SnapshotEmbedded{
+					Artifacts: embeddedArtifacts,
+				},
+				Links: SnapshotLinks{
+					Curies: []Link{
+						{
+							Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+							Name:      "larch",
+							Templated: true,
+						},
+					},
+					Self: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+					},
+					Origin: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+					},
+				},
+			})
+		}
+
+		page := Page[SnapshotPageEmbedded]{
+			Page:  1,
+			Size:  30,
+			Count: len(snapshots),
+			Total: len(snapshots),
+			Embedded: SnapshotPageEmbedded{
+				Snapshots: embeddedSnapshots,
+			},
+			Links: PageLinks{
+				Curies: []Link{
+					{
+						Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+						Name:      "larch",
+						Templated: true,
+					},
+				},
+				Self: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s?page=1", origin),
+				},
+				First: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s?page=1", origin),
+				},
+				Last: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s?page=1", origin),
+				},
+				Page: Link{
+					Href:      fmt.Sprintf("/api/v1/snapshots/%s?page={page}", origin),
+					Templated: true,
+				},
+			},
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(snapshots)
+		json.NewEncoder(w).Encode(page)
 	})
 
 	mux.HandleFunc("/api/v1/snapshots/{origin}/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -72,8 +261,138 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return
 		}
 
+		// TODO: Shared formatting logic with snapshot endpoint
+		embeddedArtifacts := make([]Artifact, 0)
+		for _, artifact := range snapshot.Artifacts {
+			algorithm, digest, _ := strings.Cut(artifact.Digest, ":")
+			embeddedArtifacts = append(embeddedArtifacts, Artifact{
+				ContentType:     artifact.ContentType,
+				ContentEncoding: artifact.ContentEncoding,
+				Digest:          artifact.Digest,
+				Size:            artifact.Size,
+				Links: ArtifactLinks{
+					Curies: []Link{
+						{
+							Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+							Name:      "larch",
+							Templated: true,
+						},
+					},
+					Self: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts/%s/%s", snapshot.Origin, snapshot.ID, algorithm, digest),
+					},
+					Snapshot: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+					},
+					Origin: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+					},
+					Blob: Link{
+						Href: fmt.Sprintf("/api/v1/blobs/%s/%s", algorithm, digest),
+					},
+				},
+			})
+		}
+
+		res := Snapshot{
+			ID:     snapshot.ID,
+			URL:    snapshot.URL,
+			Origin: snapshot.Origin,
+			Date:   snapshot.Date,
+			Embedded: SnapshotEmbedded{
+				Artifacts: embeddedArtifacts,
+			},
+			Links: SnapshotLinks{
+				Curies: []Link{
+					{
+						Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+						Name:      "larch",
+						Templated: true,
+					},
+				},
+				Self: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+				},
+				Origin: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+				},
+			},
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(snapshot)
+		json.NewEncoder(w).Encode(res)
+	})
+
+	mux.HandleFunc("/api/v1/snapshots/{origin}/{id}/artifacts/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
+		origin := r.PathValue("origin")
+		id := r.PathValue("id")
+		algorithm := r.PathValue("algorithm")
+		digest := r.PathValue("digest")
+
+		// TODO: Other API?
+		snapshots, err := index.ListSnapshots(r.Context())
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		var snapshot *indexers.Snapshot
+		for _, s := range snapshots {
+			if s.Origin == origin && s.ID == id {
+				snapshot = &s
+				break
+			}
+		}
+
+		if snapshot == nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		var artifact *indexers.Artifact
+		for _, a := range snapshot.Artifacts {
+			if a.Digest == algorithm+":"+digest {
+				artifact = &a
+				break
+			}
+		}
+
+		if artifact == nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		// TODO: Shared formatting logic with snapshot endpoint
+		res := Artifact{
+			ContentType:     artifact.ContentType,
+			ContentEncoding: artifact.ContentEncoding,
+			Digest:          artifact.Digest,
+			Size:            artifact.Size,
+			Links: ArtifactLinks{
+				Curies: []Link{
+					{
+						Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+						Name:      "larch",
+						Templated: true,
+					},
+				},
+				Self: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts/%s/%s", snapshot.Origin, snapshot.ID, algorithm, digest),
+				},
+				Snapshot: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+				},
+				Origin: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+				},
+				Blob: Link{
+					Href: fmt.Sprintf("/api/v1/blobs/%s/%s", algorithm, digest),
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(res)
 	})
 
 	mux.HandleFunc("/api/v1/blobs/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
