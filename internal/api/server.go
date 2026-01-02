@@ -398,6 +398,12 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 	mux.HandleFunc("/api/v1/blobs/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
 		digest := r.PathValue("algorithm") + ":" + r.PathValue("digest")
 
+		// Special case for the well-known empty blob
+		if digest == "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		artifact, err := index.GetArtifact(r.Context(), digest)
 		if err == indexers.ErrNotFound {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
