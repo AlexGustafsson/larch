@@ -1,0 +1,61 @@
+sources:
+  - type: feed
+    name: Maurycy's blog
+    strategy: bookmark
+    options:
+      url: https://maurycyz.com/index.xml
+      interval: 24h
+
+  - type: url
+    name: Ahey - A simple pub-sub over web push
+    strategy: archive
+    options:
+      url: https://ahey.io/
+
+strategies:
+  bookmark:
+    description: Bookmark only.
+    library: disk
+    archivers: []
+  archive:
+    description: Full archival.
+    library: disk
+    archivers:
+      - type: archive.org
+      - type: chrome
+        options:
+          pdf:
+            enabled: true
+          singlefile:
+            enabled: true
+          screenshot:
+            enabled: true
+            resolutions:
+              - 1280x720
+
+libraries:
+  disk:
+    name: Disk
+    description: Local storage
+    type: disk
+    options:
+      path: /var/data/disk
+      compress: true
+  # TODO: Implement (read-only)
+  archivebox:
+    name: ArchiveBox
+    type: archivebox
+    options:
+      path: /var/data/archive-box
+  # TODO: Is it needed? Will it be used?
+  remote:
+    name: Remote OCI
+    type: oci
+    options:
+      path: https://registry.home.internal
+  # TODO: Is it needed? Will it be used?
+  warc:
+    name: WARC
+    type: warc
+    options:
+      path: /var/data/warcs
