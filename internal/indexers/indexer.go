@@ -15,8 +15,13 @@ var (
 type Indexer interface {
 	IndexLibrary(context.Context, libraries.LibraryReader) error
 	IndexSnapshot(context.Context, string, string, libraries.SnapshotReader) error
-	ListSnapshots(context.Context) ([]Snapshot, error)
+	ListSnapshots(context.Context, *ListSnapshotsOptions) ([]Snapshot, error)
+	GetSnapshot(context.Context, string, string) (*Snapshot, error)
 	GetArtifact(context.Context, string) (*Artifact, error)
+}
+
+type ListSnapshotsOptions struct {
+	Origin string
 }
 
 type Snapshot struct {

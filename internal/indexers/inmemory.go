@@ -2,8 +2,6 @@ package indexers
 
 import (
 	"context"
-	"maps"
-	"slices"
 	"time"
 
 	"github.com/AlexGustafsson/larch/internal/libraries"
@@ -84,8 +82,28 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id str
 }
 
 // ListSnapshots implements Indexer.
-func (i *InMemoryIndex) ListSnapshots(context.Context) ([]Snapshot, error) {
-	return slices.Collect(maps.Values(i.snapshots)), nil
+func (i *InMemoryIndex) ListSnapshots(ctx context.Context, options *ListSnapshotsOptions) ([]Snapshot, error) {
+	snapshots := make([]Snapshot, 0)
+	for _, snapshot := range i.snapshots {
+		if options != nil {
+			if options.Origin != "" && snapshot.Origin != options.Origin {
+				continue
+			}
+		}
+		snapshots = append(snapshots, snapshot)
+	}
+
+	return snapshots, nil
+}
+
+// GetSnapshot implements Indexer.
+func (i *InMemoryIndex) GetSnapshot(ctx context.Context, origin string, id string) (*Snapshot, error) {
+	snapshot, ok := i.snapshots[origin+"/"+id]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return &snapshot, nil
 }
 
 func (i *InMemoryIndex) GetArtifact(ctx context.Context, digest string) (*Artifact, error) {

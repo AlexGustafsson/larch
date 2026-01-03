@@ -41,9 +41,10 @@ type SnapshotEmbedded struct {
 }
 
 type SnapshotLinks struct {
-	Curies []Link `json:"curies"`
-	Self   Link   `json:"self"`
-	Origin Link   `json:"origin"`
+	Curies    []Link `json:"curies"`
+	Self      Link   `json:"self"`
+	Origin    Link   `json:"larch:origin"`
+	Artifacts Link   `json:"larch:artifacts"`
 }
 
 type Artifact struct {
@@ -57,13 +58,17 @@ type Artifact struct {
 type ArtifactLinks struct {
 	Curies   []Link `json:"curies"`
 	Self     Link   `json:"self"`
-	Snapshot Link   `json:"snapshot"`
-	Origin   Link   `json:"origin"`
-	Blob     Link   `json:"blob"`
+	Snapshot Link   `json:"larch:snapshot"`
+	Origin   Link   `json:"larch:origin"`
+	Blob     Link   `json:"larch:blob"`
 }
 
 type SnapshotPageEmbedded struct {
 	Snapshots []Snapshot `json:"larch:snapshot"`
+}
+
+type ArtifactPageEmbedded struct {
+	Artifacts []Artifact `json:"larch:artifact"`
 }
 
 type ArtifactEmbedded struct {

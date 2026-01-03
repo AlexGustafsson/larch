@@ -22,7 +22,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/v1/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		snapshots, err := index.ListSnapshots(r.Context())
+		snapshots, err := index.ListSnapshots(r.Context(), nil)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -85,6 +85,9 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 					Origin: Link{
 						Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
 					},
+					Artifacts: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts", snapshot.Origin, snapshot.ID),
+					},
 				},
 			})
 		}
@@ -128,8 +131,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 	mux.HandleFunc("/api/v1/snapshots/{origin}", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 
-		// TODO: Other API?
-		snapshots, err := index.ListSnapshots(r.Context())
+		snapshots, err := index.ListSnapshots(r.Context(), &indexers.ListSnapshotsOptions{Origin: origin})
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -197,6 +199,9 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 					Origin: Link{
 						Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
 					},
+					Artifacts: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts", snapshot.Origin, snapshot.ID),
+					},
 				},
 			})
 		}
@@ -241,23 +246,12 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 		origin := r.PathValue("origin")
 		id := r.PathValue("id")
 
-		// TODO: Other API?
-		snapshots, err := index.ListSnapshots(r.Context())
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		var snapshot *indexers.Snapshot
-		for _, s := range snapshots {
-			if s.Origin == origin && s.ID == id {
-				snapshot = &s
-				break
-			}
-		}
-
-		if snapshot == nil {
+		snapshot, err := index.GetSnapshot(r.Context(), origin, id)
+		if err == indexers.ErrNotFound {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		} else if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
@@ -316,11 +310,99 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 				Origin: Link{
 					Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
 				},
+				Artifacts: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts", snapshot.Origin, snapshot.ID),
+				},
 			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(res)
+	})
+
+	mux.HandleFunc("/api/v1/snapshots/{origin}/{id}/artifacts", func(w http.ResponseWriter, r *http.Request) {
+		origin := r.PathValue("origin")
+		id := r.PathValue("id")
+
+		snapshot, err := index.GetSnapshot(r.Context(), origin, id)
+		if err == indexers.ErrNotFound {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		} else if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		// TODO: Shared formatting logic with snapshot endpoint
+		embeddedArtifacts := make([]Artifact, 0)
+		for _, artifact := range snapshot.Artifacts {
+			algorithm, digest, _ := strings.Cut(artifact.Digest, ":")
+			embeddedArtifacts = append(embeddedArtifacts, Artifact{
+				ContentType:     artifact.ContentType,
+				ContentEncoding: artifact.ContentEncoding,
+				Digest:          artifact.Digest,
+				Size:            artifact.Size,
+				Links: ArtifactLinks{
+					Curies: []Link{
+						{
+							Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+							Name:      "larch",
+							Templated: true,
+						},
+					},
+					Self: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts/%s/%s", snapshot.Origin, snapshot.ID, algorithm, digest),
+					},
+					Snapshot: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s/%s", snapshot.Origin, snapshot.ID),
+					},
+					Origin: Link{
+						Href: fmt.Sprintf("/api/v1/snapshots/%s", snapshot.Origin),
+					},
+					Blob: Link{
+						Href: fmt.Sprintf("/api/v1/blobs/%s/%s", algorithm, digest),
+					},
+				},
+			})
+		}
+
+		// NOTE: The page format is only used to adhere to the rest of the list
+		// types, but listing artifacts of a snapshot is not really a use case given
+		// how few there will be
+		page := Page[ArtifactPageEmbedded]{
+			Page:  1,
+			Size:  30,
+			Count: len(embeddedArtifacts),
+			Total: len(embeddedArtifacts),
+			Embedded: ArtifactPageEmbedded{
+				Artifacts: embeddedArtifacts,
+			},
+			Links: PageLinks{
+				Curies: []Link{
+					{
+						Href:      "https://github.com/AlexGustafsson/larch/blob/main/docs/api.md#{rel}",
+						Name:      "larch",
+						Templated: true,
+					},
+				},
+				Self: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts?page=1", origin, id),
+				},
+				First: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts?page=1", origin, id),
+				},
+				Last: Link{
+					Href: fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts?page=1", origin, id),
+				},
+				Page: Link{
+					Href:      fmt.Sprintf("/api/v1/snapshots/%s/%s/artifacts?page={page}", origin, id),
+					Templated: true,
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(page)
 	})
 
 	mux.HandleFunc("/api/v1/snapshots/{origin}/{id}/artifacts/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
@@ -329,36 +411,21 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 		algorithm := r.PathValue("algorithm")
 		digest := r.PathValue("digest")
 
-		// TODO: Other API?
-		snapshots, err := index.ListSnapshots(r.Context())
-		if err != nil {
+		snapshot, err := index.GetSnapshot(r.Context(), origin, id)
+		if err == indexers.ErrNotFound {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		} else if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		var snapshot *indexers.Snapshot
-		for _, s := range snapshots {
-			if s.Origin == origin && s.ID == id {
-				snapshot = &s
-				break
-			}
-		}
-
-		if snapshot == nil {
+		artifact, err := index.GetArtifact(r.Context(), algorithm+":"+digest)
+		if err == indexers.ErrNotFound {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
-		}
-
-		var artifact *indexers.Artifact
-		for _, a := range snapshot.Artifacts {
-			if a.Digest == algorithm+":"+digest {
-				artifact = &a
-				break
-			}
-		}
-
-		if artifact == nil {
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		} else if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
@@ -396,6 +463,8 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 	})
 
 	mux.HandleFunc("/api/v1/blobs/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
+		// TODO: HEAD, GET
+
 		digest := r.PathValue("algorithm") + ":" + r.PathValue("digest")
 
 		// Special case for the well-known empty blob
