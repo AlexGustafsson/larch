@@ -11,13 +11,13 @@ var _ Indexer = (*InMemoryIndex)(nil)
 
 type InMemoryIndex struct {
 	snapshots map[string]Snapshot
-	artifacts map[string]Artifact
+	blobs     map[string]Blob
 }
 
 func NewInMemoryIndex() *InMemoryIndex {
 	return &InMemoryIndex{
 		snapshots: make(map[string]Snapshot),
-		artifacts: make(map[string]Artifact),
+		blobs:     make(map[string]Blob),
 	}
 }
 
@@ -71,10 +71,18 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id str
 			ContentEncoding: manifest.ContentEncoding,
 			Digest:          manifest.Digest,
 			Size:            manifest.Size,
+			Annotations:     manifest.Annotations,
+		}
+
+		blob := Blob{
+			ContentType:     manifest.ContentType,
+			ContentEncoding: manifest.ContentEncoding,
+			Digest:          manifest.Digest,
+			Size:            manifest.Size,
 		}
 
 		snapshot.Artifacts = append(snapshot.Artifacts, artifact)
-		i.artifacts[artifact.Digest] = artifact
+		i.blobs[artifact.Digest] = blob
 	}
 
 	i.snapshots[origin+"/"+id] = snapshot
@@ -106,11 +114,30 @@ func (i *InMemoryIndex) GetSnapshot(ctx context.Context, origin string, id strin
 	return &snapshot, nil
 }
 
-func (i *InMemoryIndex) GetArtifact(ctx context.Context, digest string) (*Artifact, error) {
-	artifact, ok := i.artifacts[digest]
+func (i *InMemoryIndex) GetArtifact(ctx context.Context, origin string, id string, digest string) (*Artifact, error) {
+	snapshot, ok := i.snapshots[origin+"/"+id]
 	if !ok {
 		return nil, ErrNotFound
 	}
 
-	return &artifact, nil
+	var artifact *Artifact
+	for _, a := range snapshot.Artifacts {
+		if a.Digest == digest {
+			artifact = &a
+		}
+	}
+	if artifact == nil {
+		return nil, ErrNotFound
+	}
+
+	return artifact, nil
+}
+
+func (i *InMemoryIndex) GetBlob(ctx context.Context, digest string) (*Blob, error) {
+	blob, ok := i.blobs[digest]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return &blob, nil
 }

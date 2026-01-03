@@ -48,11 +48,12 @@ type SnapshotLinks struct {
 }
 
 type Artifact struct {
-	ContentType     string        `json:"contentType"`
-	ContentEncoding string        `json:"contentEncoding,omitempty"`
-	Digest          string        `json:"digest"`
-	Size            int64         `json:"size"`
-	Links           ArtifactLinks `json:"_links"`
+	ContentType     string            `json:"contentType"`
+	ContentEncoding string            `json:"contentEncoding,omitempty"`
+	Digest          string            `json:"digest"`
+	Size            int64             `json:"size"`
+	Annotations     map[string]string `json:"annotations,omitempty"`
+	Links           ArtifactLinks     `json:"_links"`
 }
 
 type ArtifactLinks struct {

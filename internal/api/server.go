@@ -39,6 +39,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 					ContentEncoding: artifact.ContentEncoding,
 					Digest:          artifact.Digest,
 					Size:            artifact.Size,
+					Annotations:     artifact.Annotations,
 					Links: ArtifactLinks{
 						Curies: []Link{
 							{
@@ -153,6 +154,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 					ContentEncoding: artifact.ContentEncoding,
 					Digest:          artifact.Digest,
 					Size:            artifact.Size,
+					Annotations:     artifact.Annotations,
 					Links: ArtifactLinks{
 						Curies: []Link{
 							{
@@ -264,6 +266,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 				ContentEncoding: artifact.ContentEncoding,
 				Digest:          artifact.Digest,
 				Size:            artifact.Size,
+				Annotations:     artifact.Annotations,
 				Links: ArtifactLinks{
 					Curies: []Link{
 						{
@@ -342,6 +345,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 				ContentEncoding: artifact.ContentEncoding,
 				Digest:          artifact.Digest,
 				Size:            artifact.Size,
+				Annotations:     artifact.Annotations,
 				Links: ArtifactLinks{
 					Curies: []Link{
 						{
@@ -420,7 +424,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return
 		}
 
-		artifact, err := index.GetArtifact(r.Context(), algorithm+":"+digest)
+		artifact, err := index.GetArtifact(r.Context(), origin, id, algorithm+":"+digest)
 		if err == indexers.ErrNotFound {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
@@ -435,6 +439,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			ContentEncoding: artifact.ContentEncoding,
 			Digest:          artifact.Digest,
 			Size:            artifact.Size,
+			Annotations:     artifact.Annotations,
 			Links: ArtifactLinks{
 				Curies: []Link{
 					{
@@ -472,18 +477,18 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return
 		}
 
-		artifact, err := index.GetArtifact(r.Context(), digest)
+		blob, err := index.GetBlob(r.Context(), digest)
 		if err == indexers.ErrNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("Failed to get artifact", slog.Any("error", err))
+			slog.Error("Failed to get blob", slog.Any("error", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", artifact.ContentType)
-		w.Header().Set("Content-Length", strconv.FormatInt(artifact.Size, 10))
+		w.Header().Set("Content-Type", blob.ContentType)
+		w.Header().Set("Content-Length", strconv.FormatInt(blob.Size, 10))
 		// TODO: Content encoding, if Accept supports the content encoding, just
 		// provide it, otherwise we'll need to decompress, decrypt etc.
 		// TODO: Date, cache headers
@@ -499,42 +504,42 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return
 		}
 
-		artifact, err := index.GetArtifact(r.Context(), digest)
+		blob, err := index.GetBlob(r.Context(), digest)
 		if err == indexers.ErrNotFound {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		} else if err != nil {
-			slog.Error("Failed to get artifact", slog.Any("error", err))
+			slog.Error("Failed to get blob", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		// TODO: Support multiple libraries
-		artifactReader, err := library.ReadArtifact(r.Context(), digest)
+		blobReader, err := library.ReadArtifact(r.Context(), digest)
 		if err != nil {
-			slog.Error("Failed to read artifact", slog.Any("error", err))
+			slog.Error("Failed to read blob", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", artifact.ContentType)
-		w.Header().Set("Content-Length", strconv.FormatInt(artifact.Size, 10))
+		w.Header().Set("Content-Type", blob.ContentType)
+		w.Header().Set("Content-Length", strconv.FormatInt(blob.Size, 10))
 		// TODO: Content encoding, if Accept supports the content encoding, just
 		// provide it, otherwise we'll need to decompress, decrypt etc.
 		// TODO: Date, cache headers
 		// TODO: Content-Digest?
-		if _, err := io.Copy(w, artifactReader); err != nil {
-			artifactReader.Close()
+		if _, err := io.Copy(w, blobReader); err != nil {
+			blobReader.Close()
 			return
 		}
 
-		if err := artifactReader.Close(); err != nil {
+		if err := blobReader.Close(); err != nil {
 			return
 		}
 
-		actualDigest := artifactReader.Digest()
-		if artifact.Digest != actualDigest {
-			slog.Warn("Recorded artifact digest does not match actual digest", slog.String("expected", digest), slog.String("actual", actualDigest))
+		actualDigest := blobReader.Digest()
+		if blob.Digest != actualDigest {
+			slog.Warn("Recorded blob digest does not match actual digest", slog.String("expected", digest), slog.String("actual", actualDigest))
 		}
 	})
 

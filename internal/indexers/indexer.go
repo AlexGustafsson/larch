@@ -17,7 +17,8 @@ type Indexer interface {
 	IndexSnapshot(context.Context, string, string, libraries.SnapshotReader) error
 	ListSnapshots(context.Context, *ListSnapshotsOptions) ([]Snapshot, error)
 	GetSnapshot(context.Context, string, string) (*Snapshot, error)
-	GetArtifact(context.Context, string) (*Artifact, error)
+	GetArtifact(context.Context, string, string, string) (*Artifact, error)
+	GetBlob(context.Context, string) (*Blob, error)
 }
 
 type ListSnapshotsOptions struct {
@@ -33,6 +34,14 @@ type Snapshot struct {
 }
 
 type Artifact struct {
+	ContentType     string
+	ContentEncoding string
+	Digest          string
+	Size            int64
+	Annotations     map[string]string
+}
+
+type Blob struct {
 	ContentType     string
 	ContentEncoding string
 	Digest          string
