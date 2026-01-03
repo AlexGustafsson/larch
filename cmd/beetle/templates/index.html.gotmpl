@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Beetle</title>
+  </head>
+
+  <body>
+    <h1>Beetle</h1>
+    <a href="/"><h2>/</h2></a>
+    <dl>
+      {{ range $s := .Embedded.Snapshots }}
+        <dt>
+          {{ $s.Date }} - {{ $s.URL }}
+        </dt>
+        <dd>
+          <ul>
+            {{ range $a := .Embedded.Artifacts }}
+              <li>{{ index $a.Annotations "larch.artifact.path" }} ({{ $a.Size }}B)</li>
+            {{ end }}
+          </ul>
+        </dd>
+      {{ end }}
+    </dl>
+  </body>
+</html>
