@@ -21,7 +21,7 @@ type Server struct {
 func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/v1/snapshots", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/snapshots", func(w http.ResponseWriter, r *http.Request) {
 		snapshots, err := index.ListSnapshots(r.Context(), nil)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -128,7 +128,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 		json.NewEncoder(w).Encode(page)
 	})
 
-	mux.HandleFunc("/api/v1/snapshots/{origin}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/snapshots/{origin}", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 
 		snapshots, err := index.ListSnapshots(r.Context(), &indexers.ListSnapshotsOptions{Origin: origin})
@@ -242,7 +242,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 		json.NewEncoder(w).Encode(page)
 	})
 
-	mux.HandleFunc("/api/v1/snapshots/{origin}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/snapshots/{origin}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 		id := r.PathValue("id")
 
@@ -320,7 +320,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 		json.NewEncoder(w).Encode(res)
 	})
 
-	mux.HandleFunc("/api/v1/snapshots/{origin}/{id}/artifacts", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/snapshots/{origin}/{id}/artifacts", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 		id := r.PathValue("id")
 
@@ -405,7 +405,7 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 		json.NewEncoder(w).Encode(page)
 	})
 
-	mux.HandleFunc("/api/v1/snapshots/{origin}/{id}/artifacts/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/v1/snapshots/{origin}/{id}/artifacts/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 		id := r.PathValue("id")
 		algorithm := r.PathValue("algorithm")
@@ -462,9 +462,35 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 		json.NewEncoder(w).Encode(res)
 	})
 
-	mux.HandleFunc("/api/v1/blobs/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
-		// TODO: HEAD, GET
+	mux.HandleFunc("HEAD /api/v1/blobs/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
+		digest := r.PathValue("algorithm") + ":" + r.PathValue("digest")
 
+		// Special case for the well-known empty blob
+		if digest == "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+			w.Header().Set("Content-Length", "0")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		artifact, err := index.GetArtifact(r.Context(), digest)
+		if err == indexers.ErrNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if err != nil {
+			slog.Error("Failed to get artifact", slog.Any("error", err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", artifact.ContentType)
+		w.Header().Set("Content-Length", strconv.FormatInt(artifact.Size, 10))
+		// TODO: Content encoding, if Accept supports the content encoding, just
+		// provide it, otherwise we'll need to decompress, decrypt etc.
+		// TODO: Date, cache headers
+		// TODO: Content-Digest?
+	})
+
+	mux.HandleFunc("GET /api/v1/blobs/{algorithm}/{digest}", func(w http.ResponseWriter, r *http.Request) {
 		digest := r.PathValue("algorithm") + ":" + r.PathValue("digest")
 
 		// Special case for the well-known empty blob
