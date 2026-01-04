@@ -6,24 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 
 	"github.com/AlexGustafsson/larch/internal/libraries"
 )
 
-var _ libraries.SnapshotWriter = (*Client)(nil)
-
 type Client struct {
-	Origin     string
-	SnapshotID string
-	Endpoint   string
-	Token      string
-	Client     *http.Client
+	Endpoint string
+	Client   *http.Client
 }
 
 func (c *Client) GetJobRequest(ctx context.Context) (*JobRequest, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/api/v1/jobs", c.Endpoint), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/api/v1/jobs", c.Endpoint), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +44,17 @@ func (c *Client) GetJobRequest(ctx context.Context) (*JobRequest, error) {
 	return &jobRequest, nil
 }
 
-func (c *Client) UpdateJob(ctx context.Context, job Job) error {
+var _ libraries.SnapshotWriter = (*JobClient)(nil)
+
+type JobClient struct {
+	Origin     string
+	SnapshotID string
+	Endpoint   string
+	Token      string
+	Client     *http.Client
+}
+
+func (c *JobClient) UpdateJob(ctx context.Context, job Job) error {
 	body, err := json.Marshal(&job)
 	if err != nil {
 		return err
@@ -77,15 +83,18 @@ func (c *Client) UpdateJob(ctx context.Context, job Job) error {
 }
 
 // NextArtifactWriter implements libraries.SnapshotWriter.
-func (c *Client) NextArtifactWriter(ctx context.Context, name string) (libraries.ArtifactWriter, error) {
+func (c *JobClient) NextArtifactWriter(ctx context.Context, name string) (libraries.ArtifactWriter, error) {
+	slog.Debug("Requesting artifact writer")
 	reader, writer := io.Pipe()
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/snapshots/%s/%s/artifacts"), reader)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/snapshots/%s/%s/artifacts", c.Endpoint, c.Origin, c.SnapshotID), reader)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.Token)
+
+	req.Header.Set("X-Larch-Name", name)
 
 	errCh := make(chan error)
 	digestCh := make(chan string)
@@ -117,7 +126,8 @@ func (c *Client) NextArtifactWriter(ctx context.Context, name string) (libraries
 }
 
 // WriteArtifact implements libraries.SnapshotWriter.
-func (c *Client) WriteArtifact(ctx context.Context, name string, data []byte) (int64, string, error) {
+func (c *JobClient) WriteArtifact(ctx context.Context, name string, data []byte) (int64, string, error) {
+	slog.Debug("Writing artifact")
 	w, err := c.NextArtifactWriter(ctx, name)
 	if err != nil {
 		return 0, "", err
@@ -138,13 +148,14 @@ func (c *Client) WriteArtifact(ctx context.Context, name string, data []byte) (i
 }
 
 // WriteArtifactManifest implements libraries.SnapshotWriter.
-func (c *Client) WriteArtifactManifest(ctx context.Context, manifest libraries.ArtifactManifest) error {
+func (c *JobClient) WriteArtifactManifest(ctx context.Context, manifest libraries.ArtifactManifest) error {
+	slog.Debug("Writing artifact manifest")
 	body, err := json.Marshal(manifest)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/v1/snapshots/%s/%s/manifests", c.Origin, c.SnapshotID), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/v1/snapshots/%s/%s/manifests", c.Endpoint, c.Origin, c.SnapshotID), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -156,7 +167,7 @@ func (c *Client) WriteArtifactManifest(ctx context.Context, manifest libraries.A
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusCreated {
 		return fmt.Errorf("unexpected status code: %d", res.StatusCode)
 	}
 
@@ -164,7 +175,7 @@ func (c *Client) WriteArtifactManifest(ctx context.Context, manifest libraries.A
 }
 
 // Close implements libraries.SnapshotWriter.
-func (c *Client) Close() error {
+func (c *JobClient) Close() error {
 	return nil
 }
 

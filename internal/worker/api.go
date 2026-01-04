@@ -3,6 +3,7 @@ package worker
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -31,6 +32,8 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 	mux.HandleFunc("PUT /api/v1/jobs/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 
+		// TODO: Auth
+
 		var job Job
 		if err := json.NewDecoder(r.Body).Decode(&job); err != nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -49,11 +52,15 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 		}
 	})
 
+	// TODO: Why have these fields in the URL if the worker is only supposed to
+	// access one snapshot?
 	mux.HandleFunc("POST /api/v1/snapshots/{origin}/{id}/artifacts", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 		id := r.PathValue("id")
 
-		path := r.Header.Get("X-Larch-Path")
+		// TODO: Auth
+
+		name := r.Header.Get("X-Larch-Name")
 		// TODO: Check if file already exists, no need to send it or write it to
 		// disk then
 		// digest := r.Header.Get("X-Larch-Digest")
@@ -62,24 +69,28 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 		// TODO: Return conflict if already open?
 		snapshotWriter, err := library.WriteSnapshot(r.Context(), origin, id)
 		if err != nil {
+			slog.Error("Failed to get snapshot writer", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		writer, err := snapshotWriter.NextArtifactWriter(r.Context(), path)
+		writer, err := snapshotWriter.NextArtifactWriter(r.Context(), name)
 		if err != nil {
+			slog.Error("Failed to get artifact writer", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		size, err := io.Copy(writer, r.Body)
 		if err != nil {
+			slog.Error("Failed to write artifact", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		err = writer.Close()
 		if err != nil {
+			slog.Error("Failed to close artifact", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -91,9 +102,13 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 		w.WriteHeader(http.StatusCreated)
 	})
 
+	// TODO: Why have these fields in the URL if the worker is only supposed to
+	// access one snapshot?
 	mux.HandleFunc("POST /api/v1/snapshots/{origin}/{id}/manifests", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 		id := r.PathValue("id")
+
+		// TODO: Auth
 
 		var manifest libraries.ArtifactManifest
 		if err := json.NewDecoder(r.Body).Decode(&manifest); err != nil {
@@ -105,12 +120,14 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 		// TODO: Return conflict if already open?
 		snapshotWriter, err := library.WriteSnapshot(r.Context(), origin, id)
 		if err != nil {
+			slog.Error("Failed to get snapshot writer", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		err = snapshotWriter.WriteArtifactManifest(r.Context(), manifest)
 		if err != nil {
+			slog.Error("Failed to write artifact manifest", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}

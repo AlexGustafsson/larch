@@ -32,11 +32,13 @@ func (w *Worker) Work(ctx context.Context) error {
 	}
 
 	for {
+		slog.Debug("Waiting for job")
 		jobRequest, err := client.GetJobRequest(ctx)
 		if err != nil {
 			return err
 		}
 
+		slog.Debug("Got job, executing", slog.String("jobId", jobRequest.Job.ID), slog.String("origin", jobRequest.Job.Origin), slog.String("snapshotID", jobRequest.Job.SnapshotID))
 		err = w.work(ctx, jobRequest)
 		if err != nil {
 			return err
@@ -49,10 +51,10 @@ func (w *Worker) work(ctx context.Context, request *JobRequest) error {
 	job.Accepted = time.Now()
 	job.Status = "accepted"
 
-	client := &Client{
-		Endpoint:   w.endpoint,
+	client := &JobClient{
 		Origin:     job.Origin,
 		SnapshotID: job.SnapshotID,
+		Endpoint:   w.endpoint,
 		Token:      request.Token,
 		Client:     http.DefaultClient,
 	}

@@ -2,6 +2,7 @@ package indexers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/AlexGustafsson/larch/internal/libraries"
@@ -25,23 +26,23 @@ func NewInMemoryIndex() *InMemoryIndex {
 func (i *InMemoryIndex) IndexLibrary(ctx context.Context, libraryReader libraries.LibraryReader) error {
 	origins, err := libraryReader.GetOrigins(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get origins: %w", err)
 	}
 
 	for _, origin := range origins {
 		snapshots, err := libraryReader.GetSnapshots(ctx, origin)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get snapshots for origin: %w", err)
 		}
 
 		for _, id := range snapshots {
 			snapshotReader, err := libraryReader.ReadSnapshot(ctx, origin, id)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to read snapshot: %w", err)
 			}
 
 			if err := i.IndexSnapshot(ctx, origin, id, snapshotReader); err != nil {
-				return err
+				return fmt.Errorf("failed to index snapshot: %w", err)
 			}
 		}
 	}

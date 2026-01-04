@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -63,6 +64,7 @@ type GetJobOptions struct {
 func (s *Scheduler) GetJobRequest(ctx context.Context, options *GetJobOptions) (*JobRequest, error) {
 	// TODO: Could be a sync.Cond var, which would allow easier filter of jobs -
 	// if not accepted, simply loop again
+	slog.Debug("Waiting for job request")
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -117,8 +119,6 @@ func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, library li
 	}
 
 	for _, archiver := range strategy.Archivers {
-		// TODO
-		_ = archiver
 		request := JobRequest{
 			Token:    "", // TODO: JWT which points to snapshot and everything?
 			Archiver: archiver,
@@ -132,12 +132,13 @@ func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, library li
 				Deadline:   time.Now().Add(30 * time.Minute),
 				URL:        url,
 				Origin:     origin,
-				SnapshotID: id,
+				SnapshotID: snapshotID,
 				Status:     "requested",
 				Requested:  time.Now(),
 			},
 		}
 
+		slog.Debug("Requesting job", slog.String("origin", origin), slog.String("snapshotId", snapshotID))
 		s.mutex.Lock()
 		s.inflight[request.Job.ID] = request.Job
 		s.mutex.Unlock()
