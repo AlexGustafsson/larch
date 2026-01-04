@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -23,4 +24,7 @@ func TestRead(t *testing.T) {
 	fmt.Printf("%+v\n", diskOptions)
 
 	fmt.Printf("%+v\n", config)
+
+	v, _ := json.MarshalIndent(config, "", "  ")
+	fmt.Printf("%s\n", v)
 }

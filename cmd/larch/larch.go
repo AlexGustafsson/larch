@@ -10,6 +10,7 @@ import (
 	"github.com/AlexGustafsson/larch/internal/api"
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries/disk"
+	"github.com/AlexGustafsson/larch/internal/worker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,6 +33,8 @@ func main() {
 		panic(err)
 	}
 
+	scheduler := worker.NewScheduler()
+
 	webMux := http.NewServeMux()
 
 	webMux.Handle("/api/v1/", api.NewServer(index, library))
@@ -39,6 +42,13 @@ func main() {
 	webServer := http.Server{
 		Addr:    ":8080",
 		Handler: webMux,
+	}
+
+	workerAPI := worker.NewAPI(scheduler, library)
+
+	workerServer := http.Server{
+		Addr:    ":8081",
+		Handler: workerAPI,
 	}
 
 	var wg errgroup.Group
@@ -51,6 +61,38 @@ func main() {
 		}
 
 		return nil
+	})
+
+	// Serve worker API
+	wg.Go(func() error {
+		err := workerServer.ListenAndServe()
+		if err != http.ErrServerClosed && err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	// Run a default worker
+	wg.Go(func() error {
+		worker := worker.NewWorker("http://localhost:8081")
+		return worker.Work(context.Background())
+	})
+
+	// Trigger test job
+	scheduler.ScheduleSnapshot(context.Background(), "https://google.se", library, &worker.Strategy{
+		Archivers: []worker.Archiver{
+			{
+				ArchiveOrgArchiver: &worker.ArchiveOrgArchiver{},
+			},
+			{
+				ChromeArchiver: &worker.ChromeArchiver{
+					SavePDF:               true,
+					SaveSinglefile:        true,
+					ScreenshotResolutions: []worker.Resolution{"1280x720"},
+				},
+			},
+		},
 	})
 
 	if err := wg.Wait(); err != nil {

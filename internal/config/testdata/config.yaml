@@ -6,11 +6,13 @@ sources:
       url: https://maurycyz.com/index.xml
       interval: 24h
 
+  # Registered source. Other sources are just fire and forget
   - type: url
     name: Ahey - A simple pub-sub over web push
     strategy: archive
     options:
       url: https://ahey.io/
+      interval: 24h
 
 strategies:
   bookmark:

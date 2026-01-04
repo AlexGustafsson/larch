@@ -3,14 +3,15 @@ package worker
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/AlexGustafsson/larch/internal/archivers"
+	"github.com/AlexGustafsson/larch/internal/archivers/chrome"
 )
 
 type Worker struct {
 	endpoint string
-	conn     *Conn
 }
 
 // TODO: For now the intent is to have a single code path for the embedded
@@ -18,62 +19,42 @@ type Worker struct {
 // supporting the embedded worker directly using the job channel and library,
 // which could reduce memory usage by a fair bit given that there's no extra
 // buffering involved
-func NewWorker(ctx context.Context, endpoint string) (*Worker, error) {
-	// TODO: Signal supported archivers when connecting, e.g. chrome-only worker.
-	conn, err := Dial(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
+func NewWorker(endpoint string) *Worker {
 	return &Worker{
 		endpoint: endpoint,
-		conn:     conn,
-	}, nil
+	}
 }
 
 func (w *Worker) Work(ctx context.Context) error {
 	client := &Client{
 		Endpoint: w.endpoint,
+		Client:   http.DefaultClient,
 	}
 
 	for {
-		requests, err := client.GetJobRequests(ctx)
+		jobRequest, err := client.GetJobRequest(ctx)
 		if err != nil {
 			return err
 		}
 
-		for {
-			select {
-			case request, ok := <-requests:
-				if !ok {
-					// Wait before reconnecting
-					select {
-					case <-time.After(5 * time.Second):
-						break
-					case <-ctx.Done():
-						return ctx.Err()
-					}
-				}
-
-				err := w.work(ctx, request)
-				if err != nil {
-					return err
-				}
-			case <-ctx.Done():
-				return ctx.Err()
-			}
+		err = w.work(ctx, jobRequest)
+		if err != nil {
+			return err
 		}
 	}
 }
 
-func (w *Worker) work(ctx context.Context, request JobRequest) error {
+func (w *Worker) work(ctx context.Context, request *JobRequest) error {
 	job := request.Job
 	job.Accepted = time.Now()
 	job.Status = "accepted"
 
 	client := &Client{
-		Endpoint: w.endpoint,
-		Token:    request.Token,
+		Endpoint:   w.endpoint,
+		Origin:     job.Origin,
+		SnapshotID: job.SnapshotID,
+		Token:      request.Token,
+		Client:     http.DefaultClient,
 	}
 
 	err := client.UpdateJob(ctx, job)
@@ -83,6 +64,27 @@ func (w *Worker) work(ctx context.Context, request JobRequest) error {
 
 	// TODO: Initialize archiver based on config
 	var archiver archivers.Archiver
+	if request.Archiver.ChromeArchiver != nil {
+		screenshotResolutions := make([]chrome.Resolution, 0)
+		for _, resolution := range request.Archiver.ChromeArchiver.ScreenshotResolutions {
+			width, height, err := resolution.Rect()
+			if err != nil {
+				return err
+			}
+
+			screenshotResolutions = append(screenshotResolutions, chrome.Resolution{Width: width, Height: height})
+		}
+
+		archiver = &chrome.Archiver{
+			ScreenshotResolutions: screenshotResolutions,
+			SavePDF:               request.Archiver.ChromeArchiver.SavePDF,
+			SaveSinglefile:        request.Archiver.ChromeArchiver.SaveSinglefile,
+		}
+	} else if request.Archiver.ArchiveOrgArchiver != nil {
+		archiver = &archivers.ArchiveOrgArchiver{}
+	} else {
+		panic("invalid archiver options")
+	}
 
 	job.Started = time.Now()
 	job.Status = "started"
@@ -108,10 +110,10 @@ func (w *Worker) work(ctx context.Context, request JobRequest) error {
 }
 
 func (w *Worker) Shutdown() error {
-	// TODO: Wait for current Work() call to exit?
-	return w.conn.Close()
+	panic("not implemented")
 }
 
 func (w *Worker) Close() error {
-	return w.conn.Close()
+
+	panic("not implemented")
 }

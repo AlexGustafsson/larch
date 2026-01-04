@@ -2,12 +2,14 @@ package worker
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/AlexGustafsson/larch/internal/archivers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
+	"github.com/google/uuid"
 
 	urlpkg "net/url"
 )
@@ -19,54 +21,78 @@ type RemoteWorker struct {
 
 type Scheduler struct {
 	mutex    sync.Mutex
-	workers  map[string]RemoteWorker
 	requests chan JobRequest
+	// NOTE: No reason for these to persist - upon restart, simply reschedule jobs
+	// and handle them anew.
+	inflight map[string]Job
+	secret   []byte
 }
 
 func NewScheduler() *Scheduler {
-	s := &Scheduler{
-		workers:  make(map[string]RemoteWorker),
-		requests: make(chan JobRequest, 32),
+	var secret [32]byte
+	if _, err := rand.Read(secret[:]); err != nil {
+		panic(err)
 	}
 
-	go s.schedule()
+	s := &Scheduler{
+		requests: make(chan JobRequest, 32),
+		inflight: make(map[string]Job),
+		secret:   secret[:],
+	}
 
 	return s
 }
 
-func (s *Scheduler) RegisterWorker(ctx context.Context) (string, <-chan JobRequest, error) {
+func (s *Scheduler) UpdateJob(ctx context.Context, job Job) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	id := "" // TODO
+	// TODO: E-Tag?
+	s.inflight[job.ID] = job
 
-	worker := RemoteWorker{
-		JobRequests: make(chan JobRequest),
-	}
-
-	s.workers[id] = worker
-	return id, worker.JobRequests, nil
-}
-
-func (s *Scheduler) UnregisterWorker(ctx context.Context, id string) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	delete(s.workers, id)
+	// TODO: Debounce
+	// TODO: Implement snapshot index on job done
+	// s.index()
 
 	return nil
 }
 
+type GetJobOptions struct {
+}
+
+func (s *Scheduler) GetJobRequest(ctx context.Context, options *GetJobOptions) (*JobRequest, error) {
+	// TODO: Could be a sync.Cond var, which would allow easier filter of jobs -
+	// if not accepted, simply loop again
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case job, ok := <-s.requests:
+		if !ok {
+			return nil, fmt.Errorf("closed")
+		}
+
+		return &job, nil
+	}
+}
+
 // TODO: Support multiple libraries? What's the use case?
-func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, archivers []archivers.Archiver, library libraries.LibraryWriter) error {
+func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, library libraries.LibraryWriter, strategy *Strategy) error {
 	u, err := urlpkg.Parse(url)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	origin := u.Host
-	id := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	snapshotID := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
-	snapshotWriter, err := library.WriteSnapshot(ctx, origin, id)
+	uuid, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+
+	id := uuid.String()
+
+	snapshotWriter, err := library.WriteSnapshot(ctx, origin, snapshotID)
 	if err != nil {
 		return err
 	}
@@ -90,15 +116,31 @@ func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, archivers 
 		return err
 	}
 
-	for _, archiver := range archivers {
+	for _, archiver := range strategy.Archivers {
 		// TODO
 		_ = archiver
 		request := JobRequest{
-			Token: "", // TODO: JWT which points to snapshot and everything?
+			Token:    "", // TODO: JWT which points to snapshot and everything?
+			Archiver: archiver,
 			Job: Job{
-				ID: "", // TODO
+				ID: id,
+				// TODO: Once this has expired, both parties understand that the job
+				// will be assumed abandoned and will be re-requested again.
+				// TODO: Match this with the token, so no further requests can be made
+				// TODO: Some of this time may be consumed before the worker even gets
+				// the message, whilst the request is in the queue?
+				Deadline:   time.Now().Add(30 * time.Minute),
+				URL:        url,
+				Origin:     origin,
+				SnapshotID: id,
+				Status:     "requested",
+				Requested:  time.Now(),
 			},
 		}
+
+		s.mutex.Lock()
+		s.inflight[request.Job.ID] = request.Job
+		s.mutex.Unlock()
 
 		// TODO: Should these be persisted instead of just a channel?
 		// Could then be polled / initially built from a stateful source and then
@@ -107,17 +149,4 @@ func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, archivers 
 	}
 
 	return nil
-}
-
-func (s *Scheduler) schedule() {
-	// TODO: Should these be persisted instead of just a channel?
-	// Could then be polled / initially built from a stateful source and then
-	// event-driven
-	for request := range s.requests {
-		// TODO: Implement scheduling algorithm (score workers, pick best worker)
-		for _, worker := range s.workers {
-			worker.JobRequests <- request
-			break
-		}
-	}
 }

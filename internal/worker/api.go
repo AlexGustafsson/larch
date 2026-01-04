@@ -1,13 +1,10 @@
 package worker
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/AlexGustafsson/larch/internal/libraries"
 )
@@ -20,37 +17,36 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/v1/jobs", func(w http.ResponseWriter, r *http.Request) {
-		workerID, requests, err := scheduler.RegisterWorker(r.Context())
+		// TODO: Worker capabilities
+		request, err := scheduler.GetJobRequest(r.Context(), nil)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
-		// TODO: Error handling, context deadline
-		defer scheduler.UnregisterWorker(context.Background(), workerID)
-
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		w.WriteHeader(http.StatusOK)
-
-		for request := range requests {
-			event := "request"
-			data, err := json.Marshal(request)
-			if err != nil {
-				return
-			}
-
-			_, _ = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
-			if flusher, ok := w.(http.Flusher); ok {
-				flusher.Flush()
-			}
-			<-time.After(2 * time.Second)
-		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(request)
 	})
 
-	mux.HandleFunc("PUT /api/v1/jobs/{job}", func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Track job status
+	mux.HandleFunc("PUT /api/v1/jobs/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+
+		var job Job
+		if err := json.NewDecoder(r.Body).Decode(&job); err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		if job.ID != id {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		// TODO: Handle context errors
+		if err := scheduler.UpdateJob(r.Context(), job); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 	})
 
 	mux.HandleFunc("POST /api/v1/snapshots/{origin}/{id}/artifacts", func(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +101,7 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 			return
 		}
 
-		// TODO: Support multiple libraries
+		// TODO: Support multiple libraries (or library from strategy)
 		// TODO: Return conflict if already open?
 		snapshotWriter, err := library.WriteSnapshot(r.Context(), origin, id)
 		if err != nil {
