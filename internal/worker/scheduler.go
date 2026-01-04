@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
 	"github.com/google/uuid"
 
@@ -27,9 +28,11 @@ type Scheduler struct {
 	// and handle them anew.
 	inflight map[string]Job
 	secret   []byte
+	indexer  indexers.Indexer
+	library  libraries.LibraryReader
 }
 
-func NewScheduler() *Scheduler {
+func NewScheduler(indexer indexers.Indexer, library libraries.LibraryReader) *Scheduler {
 	var secret [32]byte
 	if _, err := rand.Read(secret[:]); err != nil {
 		panic(err)
@@ -39,6 +42,8 @@ func NewScheduler() *Scheduler {
 		requests: make(chan JobRequest, 32),
 		inflight: make(map[string]Job),
 		secret:   secret[:],
+		indexer:  indexer,
+		library:  library,
 	}
 
 	return s
@@ -52,8 +57,24 @@ func (s *Scheduler) UpdateJob(ctx context.Context, job Job) error {
 	s.inflight[job.ID] = job
 
 	// TODO: Debounce
-	// TODO: Implement snapshot index on job done
-	// s.index()
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		snapshotReader, err := s.library.ReadSnapshot(ctx, job.Origin, job.SnapshotID)
+		if err != nil {
+			slog.Warn("Failed to index snapshot after job completed", slog.Any("error", err))
+			return
+		}
+
+		err = s.indexer.IndexSnapshot(context.Background(), job.Origin, job.SnapshotID, snapshotReader)
+		if err != nil {
+			slog.Warn("Failed to index snapshot after job completed", slog.Any("error", err))
+			return
+		}
+
+		slog.Debug("Successfully snapshot after job completion")
+	}()
 
 	return nil
 }

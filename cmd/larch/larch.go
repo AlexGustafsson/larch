@@ -33,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	scheduler := worker.NewScheduler()
+	scheduler := worker.NewScheduler(index, library)
 
 	webMux := http.NewServeMux()
 
