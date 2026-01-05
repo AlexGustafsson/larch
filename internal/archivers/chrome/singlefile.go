@@ -53,7 +53,7 @@ func (s saveToSinglefileAction) Do(ctx context.Context) error {
 
 	err = s.SnapshotWriter.WriteArtifactManifest(ctx, libraries.ArtifactManifest{
 		Digest:      digest,
-		ContentType: "application/html",
+		ContentType: "text/html",
 		Size:        size,
 		Annotations: map[string]string{
 			"larch.artifact.path": name,
