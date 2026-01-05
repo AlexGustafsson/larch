@@ -111,7 +111,7 @@ func NewAPI(scheduler *Scheduler, libraryWriters map[string]libraries.LibraryWri
 
 	// TODO: Why have these fields in the URL if the worker is only supposed to
 	// access one snapshot?
-	mux.HandleFunc("POST /api/v1/libraries/{library}/snapshots/{origin}/{id}/manifests", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/libraries/{library}/snapshots/{origin}/{snapshot}/manifests", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
 		snapshotID := r.PathValue("snapshot")
 		libraryID := r.PathValue("library")

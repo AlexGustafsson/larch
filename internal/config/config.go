@@ -2,6 +2,7 @@ package config
 
 import (
 	"io"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
@@ -16,4 +17,14 @@ func Read(r io.Reader) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func ReadFile(name string) (*Config, error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	return Read(file)
 }

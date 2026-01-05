@@ -69,6 +69,7 @@ type Library struct {
 
 type DiskLibraryOptions struct {
 	Path     string `yaml:"path"`
+	ReadOnly bool   `yaml:"readOnly,omitempty"`
 	Compress bool   `yaml:"compress,omitempty"`
 }
 

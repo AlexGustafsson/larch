@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/AlexGustafsson/larch/internal/api"
+	"github.com/AlexGustafsson/larch/internal/config"
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
 	"github.com/AlexGustafsson/larch/internal/libraries/disk"
@@ -18,27 +19,67 @@ import (
 func main() {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 
-	// library := &libraries.DiskLibrary{
-	// 	BasePath: "data/disk",
-	// }
-	diskLibrary, err := disk.NewLibrary("data/disk")
+	cfg, err := config.ReadFile("config.yaml")
 	if err != nil {
 		panic(err)
 	}
 
-	diskLibrary2, err := disk.NewLibrary("data/disk2")
-	if err != nil {
-		panic(err)
+	libraryReaders := make(map[string]libraries.LibraryReader)
+	libraryWriters := make(map[string]libraries.LibraryWriter)
+	for libraryID, library := range cfg.Libraries {
+		switch library.Type {
+		case "disk":
+			var options config.DiskLibraryOptions
+			if err := library.Options.As(&options); err != nil {
+				panic(err)
+			}
+
+			// TODO: Path relative to config file
+			lib, err := disk.NewLibrary(options.Path)
+			if err != nil {
+				panic(err)
+			}
+
+			libraryReaders[libraryID] = lib
+			if !options.ReadOnly {
+				libraryWriters[libraryID] = lib
+			}
+		}
 	}
 
-	libraryReaders := map[string]libraries.LibraryReader{
-		"disk":  diskLibrary,
-		"disk2": diskLibrary2,
-	}
+	strategies := make(map[string]worker.Strategy)
+	for strategyID, strategy := range cfg.Strategies {
+		archivers := make([]worker.Archiver, 0)
+		for _, archiver := range strategy.Archivers {
+			switch archiver.Type {
+			case "archive.org":
+				archivers = append(archivers, worker.Archiver{
+					ArchiveOrgArchiver: &worker.ArchiveOrgArchiver{},
+				})
+			case "chrome":
+				var options config.ChromeArchiverOptions
+				if err := archiver.Options.As(&options); err != nil {
+					panic(err)
+				}
 
-	libraryWriters := map[string]libraries.LibraryWriter{
-		"disk":  diskLibrary,
-		"disk2": diskLibrary2,
+				resolutions := make([]worker.Resolution, 0)
+				for _, resolution := range options.Screenshot.Resolutions {
+					resolutions = append(resolutions, worker.Resolution(resolution))
+				}
+
+				archivers = append(archivers, worker.Archiver{
+					ChromeArchiver: &worker.ChromeArchiver{
+						SavePDF:               options.PDF.Enabled,
+						SaveSinglefile:        options.Singlefile.Enabled,
+						ScreenshotResolutions: resolutions,
+					},
+				})
+			}
+		}
+		strategies[strategyID] = worker.Strategy{
+			Library:   strategy.Library,
+			Archivers: archivers,
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -98,36 +139,25 @@ func main() {
 	})
 
 	// Trigger test job
-	scheduler.ScheduleSnapshot(context.Background(), "https://google.se", &worker.Strategy{
-		Library: "disk",
-		Archivers: []worker.Archiver{
-			{
-				ArchiveOrgArchiver: &worker.ArchiveOrgArchiver{},
-			},
-			{
-				ChromeArchiver: &worker.ChromeArchiver{
-					SavePDF:               true,
-					SaveSinglefile:        true,
-					ScreenshotResolutions: []worker.Resolution{"1280x720"},
-				},
-			},
-		},
-	})
+	for _, source := range cfg.Sources {
+		switch source.Type {
+		case "url":
+			var options config.URLSourceOptions
+			if err := source.Options.As(&options); err != nil {
+				panic(err)
+			}
 
-	scheduler.ScheduleSnapshot(context.Background(), "https://google.se", &worker.Strategy{
-		Library: "disk2",
-		Archivers: []worker.Archiver{
-			{
-				ArchiveOrgArchiver: &worker.ArchiveOrgArchiver{},
-			},
-			{
-				ChromeArchiver: &worker.ChromeArchiver{
-					SavePDF:        true,
-					SaveSinglefile: true,
-				},
-			},
-		},
-	})
+			strategy, ok := strategies[source.Strategy]
+			if !ok {
+				panic("invalid strategy")
+			}
+
+			err := scheduler.ScheduleSnapshot(context.Background(), options.URL, &strategy)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 
 	if err := wg.Wait(); err != nil {
 		panic(err)
