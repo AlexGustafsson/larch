@@ -7,20 +7,13 @@
 
   <body>
     <h1>Beetle</h1>
-    <a href="/"><h2>/</h2></a>
-    <dl>
+    <h2>Snapshot listing</h2>
+    <hr />
+    <ul>
       {{ range $s := .Embedded.Snapshots }}
-        <dt>
-          {{ $s.Date }} - {{ $s.URL }}
-        </dt>
-        <dd>
-          <ul>
-            {{ range $a := .Embedded.Artifacts }}
-              <li>{{ index $a.Annotations "larch.artifact.path" }} ({{ $a.Size }}B)</li>
-            {{ end }}
-          </ul>
-        </dd>
+       <a href="/snapshots/{{ $s.Origin }}/{{ $s.ID }}"><li>{{ $s.Date }} - {{ $s.URL }}</li></a>
       {{ end }}
-    </dl>
+    </ul>
+    <hr />
   </body>
 </html>

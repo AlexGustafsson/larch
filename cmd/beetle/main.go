@@ -19,7 +19,7 @@ func main() {
 
 	server := NewServer(client)
 
-	err := http.ListenAndServe(":8081", server)
+	err := http.ListenAndServe(":8082", server)
 	if err != http.ErrServerClosed && err != nil {
 		slog.Error("Failed to serve", slog.Any("error", err))
 		os.Exit(1)

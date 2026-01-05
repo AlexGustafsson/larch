@@ -1,0 +1,21 @@
+{{ $s := . }}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Beetle</title>
+  </head>
+
+  <body>
+    <h1>Beetle</h1>
+    <h2>Artifact listing for <a href="{{ .URL }}">{{ .URL }}</a></h2>
+    <p>Date: {{ .Date }}</p>
+    <hr />
+    <ul>
+      {{ range $a := .Embedded.Artifacts }}
+        <li><a href="/snapshots/{{ $s.Origin }}/{{ $s.ID }}/artifacts/{{ index $a.Annotations "larch.artifact.path" }}">{{ index $a.Annotations "larch.artifact.path" }}</a> ({{ $a.Size }}B)</li>
+      {{ end }}
+    </ul>
+    <hr />
+  </body>
+</html>
