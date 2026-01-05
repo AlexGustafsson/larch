@@ -26,24 +26,26 @@ type Scheduler struct {
 	requests chan JobRequest
 	// NOTE: No reason for these to persist - upon restart, simply reschedule jobs
 	// and handle them anew.
-	inflight map[string]Job
-	secret   []byte
-	indexer  indexers.Indexer
-	library  libraries.LibraryReader
+	inflight       map[string]Job
+	secret         []byte
+	indexer        indexers.Indexer
+	libraryReaders map[string]libraries.LibraryReader
+	libraryWriters map[string]libraries.LibraryWriter
 }
 
-func NewScheduler(indexer indexers.Indexer, library libraries.LibraryReader) *Scheduler {
+func NewScheduler(indexer indexers.Indexer, libraryReaders map[string]libraries.LibraryReader, libraryWriters map[string]libraries.LibraryWriter) *Scheduler {
 	var secret [32]byte
 	if _, err := rand.Read(secret[:]); err != nil {
 		panic(err)
 	}
 
 	s := &Scheduler{
-		requests: make(chan JobRequest, 32),
-		inflight: make(map[string]Job),
-		secret:   secret[:],
-		indexer:  indexer,
-		library:  library,
+		requests:       make(chan JobRequest, 32),
+		inflight:       make(map[string]Job),
+		secret:         secret[:],
+		indexer:        indexer,
+		libraryReaders: libraryReaders,
+		libraryWriters: libraryWriters,
 	}
 
 	return s
@@ -61,19 +63,25 @@ func (s *Scheduler) UpdateJob(ctx context.Context, job Job) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		snapshotReader, err := s.library.ReadSnapshot(ctx, job.Origin, job.SnapshotID)
+		library, ok := s.libraryReaders[job.Library]
+		if !ok {
+			slog.Warn("Failed to index snapshot after job completed", slog.String("error", "no such library"))
+			return
+		}
+
+		snapshotReader, err := library.ReadSnapshot(ctx, job.Origin, job.SnapshotID)
 		if err != nil {
 			slog.Warn("Failed to index snapshot after job completed", slog.Any("error", err))
 			return
 		}
 
-		err = s.indexer.IndexSnapshot(context.Background(), job.Origin, job.SnapshotID, snapshotReader)
+		err = s.indexer.IndexSnapshot(context.Background(), job.Library, job.Origin, job.SnapshotID, snapshotReader)
 		if err != nil {
 			slog.Warn("Failed to index snapshot after job completed", slog.Any("error", err))
 			return
 		}
 
-		slog.Debug("Successfully snapshot after job completion")
+		slog.Debug("Successfully indexed snapshot after job completion")
 	}()
 
 	return nil
@@ -99,7 +107,7 @@ func (s *Scheduler) GetJobRequest(ctx context.Context, options *GetJobOptions) (
 }
 
 // TODO: Support multiple libraries? What's the use case?
-func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, library libraries.LibraryWriter, strategy *Strategy) error {
+func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, strategy *Strategy) error {
 	u, err := urlpkg.Parse(url)
 	if err != nil {
 		return err
@@ -114,6 +122,11 @@ func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, library li
 	}
 
 	id := uuid.String()
+
+	library, ok := s.libraryWriters[strategy.Library]
+	if !ok {
+		return fmt.Errorf("no such library")
+	}
 
 	snapshotWriter, err := library.WriteSnapshot(ctx, origin, snapshotID)
 	if err != nil {
@@ -144,7 +157,8 @@ func (s *Scheduler) ScheduleSnapshot(ctx context.Context, url string, library li
 			Token:    "", // TODO: JWT which points to snapshot and everything?
 			Archiver: archiver,
 			Job: Job{
-				ID: id,
+				ID:      id,
+				Library: strategy.Library,
 				// TODO: Once this has expired, both parties understand that the job
 				// will be assumed abandoned and will be re-requested again.
 				// TODO: Match this with the token, so no further requests can be made

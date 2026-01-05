@@ -18,7 +18,7 @@ type Server struct {
 	mux *http.ServeMux
 }
 
-func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server {
+func NewServer(index indexers.Indexer, libraryReaders map[string]libraries.LibraryReader) *Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/v1/snapshots", func(w http.ResponseWriter, r *http.Request) {
@@ -510,6 +510,15 @@ func NewServer(index indexers.Indexer, library libraries.LibraryReader) *Server 
 			return
 		} else if err != nil {
 			slog.Error("Failed to get blob", slog.Any("error", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		// TODO: Which library to pick? Prioritize read speed?
+		libraryID := blob.Libraries[0]
+		library, ok := libraryReaders[libraryID]
+		if !ok {
+			slog.Error("Failed to find a library for blob")
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}

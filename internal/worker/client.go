@@ -47,6 +47,7 @@ func (c *Client) GetJobRequest(ctx context.Context) (*JobRequest, error) {
 var _ libraries.SnapshotWriter = (*JobClient)(nil)
 
 type JobClient struct {
+	LibraryID  string
 	Origin     string
 	SnapshotID string
 	Endpoint   string
@@ -87,7 +88,7 @@ func (c *JobClient) NextArtifactWriter(ctx context.Context, name string) (librar
 	slog.Debug("Requesting artifact writer")
 	reader, writer := io.Pipe()
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/snapshots/%s/%s/artifacts", c.Endpoint, c.Origin, c.SnapshotID), reader)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/libraries/%s/snapshots/%s/%s/artifacts", c.Endpoint, c.LibraryID, c.Origin, c.SnapshotID), reader)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +156,7 @@ func (c *JobClient) WriteArtifactManifest(ctx context.Context, manifest librarie
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/v1/snapshots/%s/%s/manifests", c.Endpoint, c.Origin, c.SnapshotID), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/v1/libraries/%s/snapshots/%s/%s/manifests", c.Endpoint, c.LibraryID, c.Origin, c.SnapshotID), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

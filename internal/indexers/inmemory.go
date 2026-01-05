@@ -23,7 +23,7 @@ func NewInMemoryIndex() *InMemoryIndex {
 }
 
 // IndexLibrary implements Indexer.
-func (i *InMemoryIndex) IndexLibrary(ctx context.Context, libraryReader libraries.LibraryReader) error {
+func (i *InMemoryIndex) IndexLibrary(ctx context.Context, libraryID string, libraryReader libraries.LibraryReader) error {
 	origins, err := libraryReader.GetOrigins(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get origins: %w", err)
@@ -35,13 +35,13 @@ func (i *InMemoryIndex) IndexLibrary(ctx context.Context, libraryReader librarie
 			return fmt.Errorf("failed to get snapshots for origin: %w", err)
 		}
 
-		for _, id := range snapshots {
-			snapshotReader, err := libraryReader.ReadSnapshot(ctx, origin, id)
+		for _, snapshotID := range snapshots {
+			snapshotReader, err := libraryReader.ReadSnapshot(ctx, origin, snapshotID)
 			if err != nil {
 				return fmt.Errorf("failed to read snapshot: %w", err)
 			}
 
-			if err := i.IndexSnapshot(ctx, origin, id, snapshotReader); err != nil {
+			if err := i.IndexSnapshot(ctx, libraryID, origin, snapshotID, snapshotReader); err != nil {
 				return fmt.Errorf("failed to index snapshot: %w", err)
 			}
 		}
@@ -51,7 +51,7 @@ func (i *InMemoryIndex) IndexLibrary(ctx context.Context, libraryReader librarie
 }
 
 // IndexSnapshot implements Indexer.
-func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id string, snapshotReader libraries.SnapshotReader) error {
+func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, libraryID string, origin string, snapshotID string, snapshotReader libraries.SnapshotReader) error {
 	index := snapshotReader.Index()
 
 	// TODO: Fault tolerance
@@ -60,8 +60,9 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id str
 
 	snapshot := Snapshot{
 		URL:       url,
+		LibraryID: libraryID,
 		Origin:    origin,
-		ID:        id,
+		ID:        snapshotID,
 		Date:      date,
 		Artifacts: make([]Artifact, 0),
 	}
@@ -69,24 +70,30 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, origin string, id str
 	for _, manifest := range index.Artifacts {
 		artifact := Artifact{
 			ContentType:     manifest.ContentType,
+			LibraryID:       libraryID,
 			ContentEncoding: manifest.ContentEncoding,
 			Digest:          manifest.Digest,
 			Size:            manifest.Size,
 			Annotations:     manifest.Annotations,
 		}
 
-		blob := Blob{
-			ContentType:     manifest.ContentType,
-			ContentEncoding: manifest.ContentEncoding,
-			Digest:          manifest.Digest,
-			Size:            manifest.Size,
-		}
-
 		snapshot.Artifacts = append(snapshot.Artifacts, artifact)
+
+		blob, ok := i.blobs[artifact.Digest]
+		if !ok {
+			blob = Blob{
+				ContentType:     manifest.ContentType,
+				Libraries:       []string{},
+				ContentEncoding: manifest.ContentEncoding,
+				Digest:          manifest.Digest,
+				Size:            manifest.Size,
+			}
+		}
+		blob.Libraries = append(blob.Libraries, libraryID)
 		i.blobs[artifact.Digest] = blob
 	}
 
-	i.snapshots[origin+"/"+id] = snapshot
+	i.snapshots[origin+"/"+snapshotID] = snapshot
 	return nil
 }
 

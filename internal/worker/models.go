@@ -16,6 +16,7 @@ type JobRequest struct {
 
 type Job struct {
 	ID         string
+	Library    string
 	Deadline   time.Time
 	URL        string
 	Origin     string
@@ -55,5 +56,6 @@ func (r Resolution) Rect() (int64, int64, error) {
 type ArchiveOrgArchiver struct{}
 
 type Strategy struct {
+	Library   string
 	Archivers []Archiver
 }

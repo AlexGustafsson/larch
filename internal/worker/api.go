@@ -14,7 +14,7 @@ type API struct {
 	mux *http.ServeMux
 }
 
-func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
+func NewAPI(scheduler *Scheduler, libraryWriters map[string]libraries.LibraryWriter) *API {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/v1/jobs", func(w http.ResponseWriter, r *http.Request) {
@@ -54,9 +54,10 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 
 	// TODO: Why have these fields in the URL if the worker is only supposed to
 	// access one snapshot?
-	mux.HandleFunc("POST /api/v1/snapshots/{origin}/{id}/artifacts", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/libraries/{library}/snapshots/{origin}/{snapshot}/artifacts", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
-		id := r.PathValue("id")
+		snapshotID := r.PathValue("snapshot")
+		libraryID := r.PathValue("library")
 
 		// TODO: Auth
 
@@ -65,9 +66,15 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 		// disk then
 		// digest := r.Header.Get("X-Larch-Digest")
 
+		library, ok := libraryWriters[libraryID]
+		if !ok {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
 		// TODO: Support multiple libraries
 		// TODO: Return conflict if already open?
-		snapshotWriter, err := library.WriteSnapshot(r.Context(), origin, id)
+		snapshotWriter, err := library.WriteSnapshot(r.Context(), origin, snapshotID)
 		if err != nil {
 			slog.Error("Failed to get snapshot writer", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -104,11 +111,18 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 
 	// TODO: Why have these fields in the URL if the worker is only supposed to
 	// access one snapshot?
-	mux.HandleFunc("POST /api/v1/snapshots/{origin}/{id}/manifests", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/libraries/{library}/snapshots/{origin}/{id}/manifests", func(w http.ResponseWriter, r *http.Request) {
 		origin := r.PathValue("origin")
-		id := r.PathValue("id")
+		snapshotID := r.PathValue("snapshot")
+		libraryID := r.PathValue("library")
 
 		// TODO: Auth
+
+		library, ok := libraryWriters[libraryID]
+		if !ok {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
 
 		var manifest libraries.ArtifactManifest
 		if err := json.NewDecoder(r.Body).Decode(&manifest); err != nil {
@@ -118,7 +132,7 @@ func NewAPI(scheduler *Scheduler, library libraries.LibraryWriter) *API {
 
 		// TODO: Support multiple libraries (or library from strategy)
 		// TODO: Return conflict if already open?
-		snapshotWriter, err := library.WriteSnapshot(r.Context(), origin, id)
+		snapshotWriter, err := library.WriteSnapshot(r.Context(), origin, snapshotID)
 		if err != nil {
 			slog.Error("Failed to get snapshot writer", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

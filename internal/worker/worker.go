@@ -52,6 +52,7 @@ func (w *Worker) work(ctx context.Context, request *JobRequest) error {
 	job.Status = "accepted"
 
 	client := &JobClient{
+		LibraryID:  job.Library,
 		Origin:     job.Origin,
 		SnapshotID: job.SnapshotID,
 		Endpoint:   w.endpoint,
