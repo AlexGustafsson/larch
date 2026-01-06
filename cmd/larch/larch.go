@@ -74,6 +74,10 @@ func main() {
 						ScreenshotResolutions: resolutions,
 					},
 				})
+			case "opengraph":
+				archivers = append(archivers, worker.Archiver{
+					OpenGraphArchiver: &worker.OpenGraphArchiver{},
+				})
 			}
 		}
 		strategies[strategyID] = worker.Strategy{

@@ -8,10 +8,10 @@ sources:
 
   # Registered source. Other sources are just fire and forget
   - type: url
-    name: Google
+    name: Cupdate
     strategy: archive
     options:
-      url: https://google.com
+      url: https://github.com/AlexGustafsson/cupdate
       interval: 24h
 
 strategies:
@@ -24,6 +24,7 @@ strategies:
     library: disk
     archivers:
       - type: archive.org
+      - type: opengraph
       - type: chrome
         options:
           pdf:

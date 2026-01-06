@@ -8,6 +8,7 @@ import (
 
 	"github.com/AlexGustafsson/larch/internal/archivers"
 	"github.com/AlexGustafsson/larch/internal/archivers/chrome"
+	"github.com/AlexGustafsson/larch/internal/archivers/opengraph"
 )
 
 type Worker struct {
@@ -85,6 +86,8 @@ func (w *Worker) work(ctx context.Context, request *JobRequest) error {
 		}
 	} else if request.Archiver.ArchiveOrgArchiver != nil {
 		archiver = &archivers.ArchiveOrgArchiver{}
+	} else if request.Archiver.OpenGraphArchiver != nil {
+		archiver = &opengraph.Archiver{}
 	} else {
 		panic("invalid archiver options")
 	}

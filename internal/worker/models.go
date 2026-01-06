@@ -32,6 +32,7 @@ type Job struct {
 type Archiver struct {
 	ChromeArchiver     *ChromeArchiver
 	ArchiveOrgArchiver *ArchiveOrgArchiver
+	OpenGraphArchiver  *OpenGraphArchiver
 }
 
 type ChromeArchiver struct {
@@ -54,6 +55,8 @@ func (r Resolution) Rect() (int64, int64, error) {
 }
 
 type ArchiveOrgArchiver struct{}
+
+type OpenGraphArchiver struct{}
 
 type Strategy struct {
 	Library   string
