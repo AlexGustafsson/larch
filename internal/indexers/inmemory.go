@@ -2,6 +2,7 @@ package indexers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -60,6 +61,7 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, libraryID string, ori
 
 	snapshot := Snapshot{
 		URL:       url,
+		Title:     "",
 		LibraryID: libraryID,
 		Origin:    origin,
 		ID:        snapshotID,
@@ -91,6 +93,22 @@ func (i *InMemoryIndex) IndexSnapshot(ctx context.Context, libraryID string, ori
 		}
 		blob.Libraries = append(blob.Libraries, libraryID)
 		i.blobs[artifact.Digest] = blob
+
+		// Try to parse additional information from the Open Graph data
+		if manifest.Annotations["larch.artifact.type"] == "vnd.larch.opengraph.meta.v1" {
+			reader, err := snapshotReader.NextArtifactReader(ctx, manifest.Digest)
+			if err == nil {
+				var properties map[string][]string
+				err := json.NewDecoder(reader).Decode(&properties)
+				reader.Close()
+				if err == nil {
+					titles := properties["og:title"]
+					if len(titles) > 0 {
+						snapshot.Title = titles[0]
+					}
+				}
+			}
+		}
 	}
 
 	i.snapshots[origin+"/"+snapshotID] = snapshot

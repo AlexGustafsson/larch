@@ -30,6 +30,7 @@ type Link struct {
 type Snapshot struct {
 	ID       string           `json:"id"`
 	URL      string           `json:"url"`
+	Title    string           `json:"title"`
 	Origin   string           `json:"origin"`
 	Date     time.Time        `json:"date"`
 	Embedded SnapshotEmbedded `json:"_embedded"`

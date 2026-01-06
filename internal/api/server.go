@@ -67,6 +67,7 @@ func NewServer(index indexers.Indexer, libraryReaders map[string]libraries.Libra
 			embeddedSnapshots = append(embeddedSnapshots, Snapshot{
 				ID:     snapshot.ID,
 				URL:    snapshot.URL,
+				Title:  snapshot.Title,
 				Origin: snapshot.Origin,
 				Date:   snapshot.Date,
 				Embedded: SnapshotEmbedded{
@@ -182,6 +183,7 @@ func NewServer(index indexers.Indexer, libraryReaders map[string]libraries.Libra
 			embeddedSnapshots = append(embeddedSnapshots, Snapshot{
 				ID:     snapshot.ID,
 				URL:    snapshot.URL,
+				Title:  snapshot.Title,
 				Origin: snapshot.Origin,
 				Date:   snapshot.Date,
 				Embedded: SnapshotEmbedded{
@@ -294,6 +296,7 @@ func NewServer(index indexers.Indexer, libraryReaders map[string]libraries.Libra
 		res := Snapshot{
 			ID:     snapshot.ID,
 			URL:    snapshot.URL,
+			Title:  snapshot.Title,
 			Origin: snapshot.Origin,
 			Date:   snapshot.Date,
 			Embedded: SnapshotEmbedded{

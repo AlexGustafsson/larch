@@ -27,6 +27,7 @@ type ListSnapshotsOptions struct {
 
 type Snapshot struct {
 	URL       string
+	Title     string
 	LibraryID string
 	Origin    string
 	ID        string
