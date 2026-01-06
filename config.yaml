@@ -44,3 +44,10 @@ libraries:
     options:
       path: ./data/disk
       compress: true
+  archivebox:
+    name: ArchiveBox
+    type: archivebox
+    options:
+      path: ./data/archivebox
+      # Must be set to true
+      readOnly: true

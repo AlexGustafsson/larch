@@ -73,6 +73,11 @@ type DiskLibraryOptions struct {
 	Compress bool   `yaml:"compress,omitempty"`
 }
 
+type ArchiveBoxLibraryOptions struct {
+	Path     string `yaml:"path"`
+	ReadOnly bool   `yaml:"readOnly,omitempty"`
+}
+
 type RawNode struct{ node *yaml.Node }
 
 func (n *RawNode) MarshalYAML() (any, error) {

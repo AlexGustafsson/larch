@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/AlexGustafsson/larch/internal/config"
 	"github.com/AlexGustafsson/larch/internal/indexers"
 	"github.com/AlexGustafsson/larch/internal/libraries"
+	"github.com/AlexGustafsson/larch/internal/libraries/archivebox"
 	"github.com/AlexGustafsson/larch/internal/libraries/disk"
 	"github.com/AlexGustafsson/larch/internal/worker"
 	"golang.org/x/sync/errgroup"
@@ -44,6 +46,35 @@ func main() {
 			if !options.ReadOnly {
 				libraryWriters[libraryID] = lib
 			}
+		case "archivebox":
+			var options config.ArchiveBoxLibraryOptions
+			if err := library.Options.As(&options); err != nil {
+				panic(err)
+			}
+
+			if !options.ReadOnly {
+				panic(fmt.Errorf("ArchiveBox libraries must be read-only"))
+			}
+
+			// TODO: Persist index
+			indexer, err := archivebox.NewIndexer(options.Path)
+			if err != nil {
+				panic(err)
+			}
+
+			index, err := indexer.Index(context.Background())
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%+v\n", index)
+
+			// TODO: Path relative to config file
+			lib, err := archivebox.NewLibrary(options.Path, index)
+			if err != nil {
+				panic(err)
+			}
+
+			libraryReaders[libraryID] = lib
 		}
 	}
 
